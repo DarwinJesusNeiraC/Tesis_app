@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "656858017010",
+    "project_id": "tesis-bd172",
+    "storage_bucket": "tesis-bd172.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:656858017010:android:6050b2dfb82ceda9f9346b",
+        "android_client_info": {
+          "package_name": "com.example.drawtesis"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfRLR_l5GBVb5sbDpcKeEDHDyQ7c_TQJM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
