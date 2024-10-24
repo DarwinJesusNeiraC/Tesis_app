@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 import 'package:flutter/rendering.dart';
 
+/*
 class DrawScreen extends StatefulWidget {
   @override
   _DrawScreenState createState() => _DrawScreenState();
@@ -92,9 +93,197 @@ class _DrawingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     Paint paint = Paint()
-      ..color = Colors.black
+      ..color = Colors.blue
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 5.0;
+      ..strokeWidth = 8.0;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
+  }
+}
+*
+class DrawScreen extends StatefulWidget {
+  @override
+  _DrawScreenState createState() => _DrawScreenState();
+}
+
+class _DrawScreenState extends State<DrawScreen> {
+  List<Offset?> _points = [];
+  GlobalKey _globalKey = GlobalKey();
+
+  Future<void> _saveToStorage() async {
+    // Código para guardar la imagen (sin cambios)
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Dibujar sobre la Espiral'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.save),
+            onPressed: _saveToStorage,
+          )
+        ],
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              width: 300, // Cambia el tamaño aquí
+              height: 300, // Cambia el tamaño aquí
+              child: Image.asset('assets/spiral.png', fit: BoxFit.contain),
+            ),
+          ),
+          RepaintBoundary(
+            key: _globalKey,
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  RenderBox renderBox = context.findRenderObject() as RenderBox;
+                  Offset localPosition =
+                      renderBox.globalToLocal(details.globalPosition);
+                  if (localPosition.dx >= 0 &&
+                      localPosition.dy >= 0 &&
+                      localPosition.dx <= renderBox.size.width &&
+                      localPosition.dy <= renderBox.size.height) {
+                    _points.add(localPosition);
+                  }
+                });
+              },
+              onPanEnd: (details) {
+                _points.add(null); // Marca el final de una línea
+              },
+              child: CustomPaint(
+                painter: _DrawingPainter(points: _points),
+                child: Container(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DrawingPainter extends CustomPainter {
+  final List<Offset?> points;
+  _DrawingPainter({required this.points});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint paint = Paint()
+      ..color = Colors.blue
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 8.0;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
+  }
+}
+*/
+class DrawScreen extends StatefulWidget {
+  @override
+  _DrawScreenState createState() => _DrawScreenState();
+}
+
+class _DrawScreenState extends State<DrawScreen> {
+  List<Offset?> _points = [];
+  GlobalKey _globalKey = GlobalKey();
+
+  Future<void> _saveToStorage() async {
+    // Código para guardar la imagen (sin cambios)
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Dibujar sobre la Espiral'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.save),
+            onPressed: _saveToStorage,
+          )
+        ],
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              width: 300, // Ajusta el tamaño aquí
+              height: 300, // Ajusta el tamaño aquí
+              child: Image.asset('assets/spiral.png', fit: BoxFit.contain),
+            ),
+          ),
+          RepaintBoundary(
+            key: _globalKey,
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  RenderBox renderBox = _globalKey.currentContext!
+                      .findRenderObject() as RenderBox;
+
+                  // Ajusta el cálculo de la posición
+                  Offset localPosition =
+                      renderBox.globalToLocal(details.globalPosition);
+
+                  // Asegúrate de que las coordenadas estén dentro del límite
+                  if (localPosition.dx >= 0 &&
+                      localPosition.dy >= 0 &&
+                      localPosition.dx <= renderBox.size.width &&
+                      localPosition.dy <= renderBox.size.height) {
+                    _points.add(localPosition);
+                  }
+                });
+              },
+              onPanEnd: (details) {
+                _points.add(null); // Marca el final de una línea
+              },
+              child: Container(
+                width:
+                    800, // Asegúrate de que coincida con el tamaño de la imagen
+                height:
+                    800, // Asegúrate de que coincida con el tamaño de la imagen
+                child: CustomPaint(
+                  painter: _DrawingPainter(points: _points),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DrawingPainter extends CustomPainter {
+  final List<Offset?> points;
+  _DrawingPainter({required this.points});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint paint = Paint()
+      ..color = Colors.blue
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 8.0;
 
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != null && points[i + 1] != null) {
