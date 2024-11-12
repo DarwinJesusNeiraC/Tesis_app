@@ -212,6 +212,12 @@ class _DrawScreenState extends State<DrawScreen> {
     // Código para guardar la imagen (sin cambios)
   }
 
+  void _clearDrawing() {
+    setState(() {
+      _points.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,7 +227,11 @@ class _DrawScreenState extends State<DrawScreen> {
           IconButton(
             icon: Icon(Icons.save),
             onPressed: _saveToStorage,
-          )
+          ),
+          IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: _clearDrawing,
+          ),
         ],
       ),
       body: Stack(
@@ -283,7 +293,7 @@ class _DrawingPainter extends CustomPainter {
     Paint paint = Paint()
       ..color = Colors.blue
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 8.0;
+      ..strokeWidth = 12.0;
 
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != null && points[i + 1] != null) {
