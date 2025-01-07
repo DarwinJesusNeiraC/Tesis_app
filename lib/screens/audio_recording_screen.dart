@@ -252,8 +252,9 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   }
 }
 
-*/
+*
 
+-----------------------------
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -554,5 +555,241 @@ class WaveformPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;
+  }
+}
+*/
+
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+class AudioRecordingScreen extends StatefulWidget {
+  @override
+  _AudioRecordingScreenState createState() => _AudioRecordingScreenState();
+}
+
+class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
+  final FlutterSoundRecorder _audioRecorder = FlutterSoundRecorder();
+  final FlutterSoundPlayer _audioPlayer = FlutterSoundPlayer();
+
+  bool _isRecording = false;
+  bool _isPlaying = false;
+  bool _isPaused = false;
+
+  String _currentLetter = "A"; // Letra inicial
+  int _recordingCount = 1; // Contador de grabaciones por letra
+  String? _filePath;
+
+  final List<String> _letters = [
+    "A",
+    "E",
+    "I",
+    "O",
+    "U",
+    "Palabra 1",
+    "Palabra 2"
+  ];
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initRecorder();
+    _initPlayer();
+  }
+
+  @override
+  void dispose() {
+    _audioRecorder.closeRecorder();
+    _audioPlayer.closePlayer();
+    super.dispose();
+  }
+
+  Future<void> _initRecorder() async {
+    var status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) {
+      throw Exception('Permiso de micrófono denegado');
+    }
+    await _audioRecorder.openRecorder();
+  }
+
+  Future<void> _initPlayer() async {
+    await _audioPlayer.openPlayer();
+  }
+
+  Future<void> _startRecording() async {
+    try {
+      final directory = Directory('/storage/emulated/0/Download');
+      if (!directory.existsSync()) {
+        directory.createSync();
+      }
+
+      String fileName = '$_recordingCount$_currentLetter.aac';
+      String path = '${directory.path}/$fileName';
+      setState(() => _filePath = path);
+
+      await _audioRecorder.startRecorder(toFile: path);
+      setState(() => _isRecording = true);
+    } catch (e) {
+      print('Error al iniciar grabación: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al iniciar grabación: $e')),
+      );
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    try {
+      await _audioRecorder.stopRecorder();
+      setState(() {
+        _isRecording = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Audio guardado en: $_filePath')),
+      );
+    } catch (e) {
+      print('Error al detener la grabación: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al detener la grabación: $e')),
+      );
+    }
+  }
+
+  Future<void> _playAudio() async {
+    try {
+      if (_filePath != null && File(_filePath!).existsSync()) {
+        await _audioPlayer.startPlayer(
+          fromURI: _filePath,
+          whenFinished: () {
+            setState(() => _isPlaying = false);
+          },
+        );
+        setState(() {
+          _isPlaying = true;
+          _isPaused = false;
+        });
+      } else {
+        throw Exception('Archivo de audio no encontrado en $_filePath');
+      }
+    } catch (e) {
+      print('Error al reproducir el audio: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al reproducir el audio: $e')),
+      );
+    }
+  }
+
+  Future<void> _pauseAudio() async {
+    try {
+      await _audioPlayer.pausePlayer();
+      setState(() => _isPaused = true);
+    } catch (e) {
+      print('Error al pausar el audio: $e');
+    }
+  }
+
+  Future<void> _resumeAudio() async {
+    try {
+      await _audioPlayer.resumePlayer();
+      setState(() => _isPaused = false);
+    } catch (e) {
+      print('Error al reanudar el audio: $e');
+    }
+  }
+
+  void _nextLetter() {
+    setState(() {
+      if (_recordingCount < 3) {
+        _recordingCount++;
+      } else {
+        _currentIndex = (_currentIndex + 1) % _letters.length;
+        _currentLetter = _letters[_currentIndex];
+        _recordingCount = 1;
+      }
+    });
+  }
+
+  void _retryRecording() {
+    if (_isRecording) {
+      _stopRecording();
+    }
+    _startRecording();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Prueba de Audio"),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "PRUEBA DE AUDIO (AUDIO TEST)",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            Text(
+              _currentLetter,
+              style: TextStyle(
+                  fontSize: 80,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange),
+            ),
+            SizedBox(height: 20),
+            Icon(Icons.mic, size: 100, color: Colors.black),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _isRecording ? null : _startRecording,
+                  icon: Icon(Icons.mic),
+                  label: Text("Grabar"),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _isRecording ? _stopRecording : null,
+                  icon: Icon(Icons.stop),
+                  label: Text("Detener"),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _isPlaying && !_isPaused ? _pauseAudio : null,
+                  icon: Icon(Icons.pause),
+                  label: Text("Pausar"),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _isPaused ? _resumeAudio : _playAudio,
+                  icon: Icon(_isPaused ? Icons.play_arrow : Icons.play_arrow),
+                  label: Text("Reproducir"),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: _retryRecording,
+                  child: Text("Regrabar"),
+                ),
+                ElevatedButton(
+                  onPressed: _nextLetter,
+                  child: Text("Siguiente"),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
