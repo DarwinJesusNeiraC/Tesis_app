@@ -8,7 +8,8 @@ class UserFormScreen extends StatefulWidget {
 
 class _UserFormScreenState extends State<UserFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  String _name = '';
+  String _firstName = '';
+  String _lastName = '';
   String _gender = 'Hombre';
   String _handUsed = 'Derecha';
   bool _isDominantHand = false;
@@ -23,7 +24,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => DrawScreen(
-            userName: _name,
+            firstName: _firstName,
+            lastName: _lastName,
             gender: _gender,
             age: _age,
             handUsed: _handUsed,
@@ -46,10 +48,20 @@ class _UserFormScreenState extends State<UserFormScreen> {
             children: [
               TextFormField(
                 decoration: InputDecoration(labelText: 'Nombre'),
-                onSaved: (value) => _name = value!,
+                onSaved: (value) => _firstName = value!,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor ingresa tu nombre';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Apellido'),
+                onSaved: (value) => _lastName = value!,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor ingresa tu apellido';
                   }
                   return null;
                 },

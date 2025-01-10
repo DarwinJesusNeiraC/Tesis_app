@@ -1,14 +1,15 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:drawtesis/screens/audio_recording_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 import 'package:flutter/rendering.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class DrawScreen extends StatefulWidget {
-  final String userName;
+  final String firstName;
+  final String lastName;
   final String gender;
   final int age;
   final String handUsed;
@@ -16,7 +17,8 @@ class DrawScreen extends StatefulWidget {
 
   // Constructor modificado con parámetros nombrados requeridos
   DrawScreen({
-    required this.userName,
+    required this.firstName,
+    required this.lastName,
     required this.gender,
     required this.age,
     required this.handUsed,
@@ -30,6 +32,31 @@ class DrawScreen extends StatefulWidget {
 class _DrawScreenState extends State<DrawScreen> {
   List<Offset?> _points = [];
   GlobalKey _globalKey = GlobalKey();
+  String? _userFolderPath;
+
+  Future<String> _createUserFolder() async {
+    final directory = Directory('/storage/emulated/0/Download');
+    String folderName = "${widget.firstName}_${widget.lastName}";
+    final userFolder = Directory('${directory.path}/$folderName');
+
+    if (!userFolder.existsSync()) {
+      await userFolder.create(recursive: true);
+    }
+    return userFolder.path;
+  }
+
+  Future<void> _saveUserInfo(String folderPath) async {
+    final file = File('$folderPath/user_info.txt');
+    final content = """
+      Nombre: ${widget.firstName}
+      Apellido: ${widget.lastName}
+      Género: ${widget.gender}
+      Edad: ${widget.age}
+      Mano utilizada: ${widget.handUsed}
+      Es dominante: ${widget.isDominant ? "Si" : "No"}
+      """;
+    await file.writeAsString(content);
+  }
 
   Future<void> _saveToDownloads(Uint8List bytes, String fileName) async {
     // Verificar permiso para Android
@@ -43,6 +70,7 @@ class _DrawScreenState extends State<DrawScreen> {
     }
   }
 
+/*
   Future<void> _saveToStorage() async {
     try {
       // Obtiene el widget para capturar la imagen
@@ -106,12 +134,58 @@ class _DrawScreenState extends State<DrawScreen> {
       */
     }
   }
+  */
+
+  Future<void> _saveDrawing(BuildContext context) async {
+    try {
+      final folderPath = await _createUserFolder();
+      await _saveUserInfo(folderPath);
+
+      final RenderRepaintBoundary? boundary = _globalKey.currentContext
+          ?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        throw Exception(
+            'No se pudo acceder al contexto del RenderRepaintBoundary');
+      }
+
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      final fileName = 'dibujo.png';
+      final filePath = '$folderPath/$fileName';
+      final file = File(filePath);
+      await file.writeAsBytes(pngBytes);
+
+      print('Imagen guardada en: $filePath');
+
+      /*
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Dibujo guardado en: $filePath')),
+      );
+      */
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (innerContext) => AudioRecordingScreen(
+            firstName: widget.firstName,
+            lastName: widget.lastName,
+            folderPath: folderPath,
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error al guardar el dibujo: $e');
+      /*
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al guardar el dibujo: $e')),
+      );
+      */
+    }
+  }
 
   void _clearDrawing() {
-    /*setState(() {
-      _points.clear();
-    });
-    */
     setState(() => _points.clear());
   }
 
@@ -123,7 +197,7 @@ class _DrawScreenState extends State<DrawScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.save),
-            onPressed: _saveToStorage,
+            onPressed: () => _saveDrawing(context),
           ),
           IconButton(
             icon: Icon(Icons.delete),

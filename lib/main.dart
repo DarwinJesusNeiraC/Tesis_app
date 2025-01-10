@@ -21,10 +21,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/',
       routes: {
-        //'/': (context) => UserFormScreen(),
+        '/': (context) => UserFormScreen(),
         //'/draw': (context) => DrawScreen(),
         //'/audio': (context) => AudioRecordingScreen(), // Nueva ruta
-        '/': (context) => AudioRecordingScreen(), // Nueva ruta
+        //'/': (context) => AudioRecordingScreen(), // Nueva ruta
       },
     );
   }
