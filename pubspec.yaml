@@ -69,6 +69,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/spiral.png  # Agregas tu imagen aquí
+    - assets/logo.png  # Agregas tu imagen aquí
 
   # To add assets to your application, add an assets section, like this:
   # assets:

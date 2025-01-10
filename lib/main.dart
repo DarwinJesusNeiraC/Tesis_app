@@ -1,4 +1,5 @@
 import 'package:drawtesis/screens/audio_recording_screen.dart';
+import 'package:drawtesis/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'screens/user_form_screen.dart';
 import 'screens/draw_screen.dart';
@@ -18,10 +19,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'App de Dibujo',
+      debugShowCheckedModeBanner: false, // Elimina el banner "Debug"
+
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/',
       routes: {
-        '/': (context) => UserFormScreen(),
+        '/': (context) => SplashScreen(),
+        '/user_form': (context) => UserFormScreen(),
         //'/draw': (context) => DrawScreen(),
         //'/audio': (context) => AudioRecordingScreen(), // Nueva ruta
         //'/': (context) => AudioRecordingScreen(), // Nueva ruta

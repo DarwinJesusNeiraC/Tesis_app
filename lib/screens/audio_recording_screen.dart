@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:drawtesis/screens/thank_you_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:path_provider/path_provider.dart';
@@ -33,15 +34,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   int _recordingCount = 1; // Contador de grabaciones por letra (1, 2, 3)
   String? _filePath;
 
-  final List<String> _letters = [
-    "A",
-    "E",
-    "I",
-    "O",
-    "U",
-    "Palabra 1",
-    "Palabra 2"
-  ];
+  final List<String> _letters = ["A", "E", "I", "O", "U"];
   int _currentIndex = 0;
 
   // Timer para la grabación
@@ -85,7 +78,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       //String fileName = '$_recordingCount$_currentLetter.aac';
       //String path = '${directory.path}/$fileName';
       String fileName =
-          'audio_${widget.firstName}_${widget.lastName}_$_recordingCount.aac';
+          'audio_${widget.firstName}_${widget.lastName}_${_currentLetter}_$_recordingCount.aac';
       String path = '${widget.folderPath}/$fileName';
       setState(() {
         _filePath = path;
@@ -171,10 +164,17 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     setState(() {
       if (_recordingCount < 3) {
         _recordingCount++;
-      } else {
-        _currentIndex = (_currentIndex + 1) % _letters.length;
+      } else if (_currentIndex < _letters.length - 1) {
+        //_currentIndex = (_currentIndex + 1) % _letters.length;
+        _currentIndex++;
         _currentLetter = _letters[_currentIndex];
         _recordingCount = 1;
+      } else {
+        // Si todas las letras están completadas, navegar a la pantalla de agradecimiento
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => ThankYouScreen()),
+        );
       }
       _isRecordingComplete = false; // Resetear para la siguiente letra
     });
@@ -223,105 +223,106 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Prueba de Audio"),
-      ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          SizedBox(height: 20),
-          Text(
-            "PRUEBA DE AUDIO (AUDIO TEST)",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 10),
-          Column(
+        appBar: AppBar(
+          title: Text("Prueba de Audio"),
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              SizedBox(height: 20),
               Text(
-                '$_currentLetter', // Mostrar letra
-                style: TextStyle(
-                  fontSize: 80,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange,
-                ),
+                "PRUEBA DE AUDIO (AUDIO TEST)",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 10),
-              Text(
-                'Repetición: $_recordingCount de 3', // Mostrar contador de repetición
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.blueGrey,
-                ),
-              ),
-              Icon(Icons.mic, size: 100, color: Colors.black),
-              if (_isRecording)
-                Text(
-                  "Tiempo: ${_formatDuration(_recordingDuration)}",
-                  style: TextStyle(fontSize: 20, color: Colors.red),
-                ),
-            ],
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _isRecording ? null : _startRecording,
-                          icon: Icon(Icons.mic),
-                          label: Text("Grabar"),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _isRecording ? _stopRecording : null,
-                          icon: Icon(Icons.stop),
-                          label: Text("Detener"),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed:
-                              _isPlaying && !_isPaused ? _pauseAudio : null,
-                          icon: Icon(Icons.pause),
-                          label: Text("Pausar"),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _isPaused
-                              ? _resumeAudio
-                              : (_isRecordingComplete ? _playAudio : null),
-                          icon: Icon(Icons.play_arrow),
-                          label: Text("Reproducir"),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
               Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  ElevatedButton(
-                    onPressed: _startRecording,
-                    child: Text("Regrabar"),
+                  Text(
+                    '$_currentLetter', // Mostrar letra
+                    style: TextStyle(
+                      fontSize: 80,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange,
+                    ),
                   ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _nextLetter,
-                    child: Text("Siguiente"),
+                  SizedBox(height: 10),
+                  Text(
+                    'Repetición: $_recordingCount de 3', // Mostrar contador de repetición
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blueGrey,
+                    ),
+                  ),
+                  Icon(Icons.mic, size: 100, color: Colors.black),
+                  if (_isRecording)
+                    Text(
+                      "Tiempo: ${_formatDuration(_recordingDuration)}",
+                      style: TextStyle(fontSize: 20, color: Colors.red),
+                    ),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: _isRecording ? null : _startRecording,
+                              icon: Icon(Icons.mic),
+                              label: Text("Grabar"),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: _isRecording ? _stopRecording : null,
+                              icon: Icon(Icons.stop),
+                              label: Text("Detener"),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed:
+                                  _isPlaying && !_isPaused ? _pauseAudio : null,
+                              icon: Icon(Icons.pause),
+                              label: Text("Pausar"),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: _isPaused
+                                  ? _resumeAudio
+                                  : (_isRecordingComplete ? _playAudio : null),
+                              icon: Icon(Icons.play_arrow),
+                              label: Text("Reproducir"),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _startRecording,
+                        child: Text("Regrabar"),
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _isRecordingComplete ? _nextLetter : null,
+                        child: Text("Siguiente"),
+                      ),
+                    ],
                   ),
                 ],
               ),
+              SizedBox(height: 20),
             ],
           ),
-          SizedBox(height: 20),
-        ],
-      ),
-    );
+        ));
   }
 }
