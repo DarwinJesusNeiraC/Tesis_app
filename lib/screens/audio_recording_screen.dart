@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:drawtesis/screens/thank_you_screen.dart';
+import 'package:drawtesis/services/prediction_service.dart';
+import 'package:drawtesis/services/symptom_detection_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,6 +26,7 @@ class AudioRecordingScreen extends StatefulWidget {
 class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   final FlutterSoundRecorder _audioRecorder = FlutterSoundRecorder();
   final FlutterSoundPlayer _audioPlayer = FlutterSoundPlayer();
+  late final SymptomDetectionService _symptomDetectionService;
 
   bool _isRecording = false;
   bool _isPlaying = false;
@@ -46,10 +49,12 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     super.initState();
     _initRecorder();
     _initPlayer();
+    _symptomDetectionService = SymptomDetectionService(PredictionService());
   }
 
   @override
   void dispose() {
+    print('DEBUG: AudioRecordingScreen is disposing. API calls will NOT be made if navigation did not complete.'); // <--- ADD THIS LINE
     _audioRecorder.closeRecorder();
     _audioPlayer.closePlayer();
     _recordingTimer?.cancel();
@@ -78,14 +83,14 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       //String fileName = '$_recordingCount$_currentLetter.aac';
       //String path = '${directory.path}/$fileName';
       String fileName =
-          'audio_${widget.firstName}_${widget.lastName}_${_currentLetter}_$_recordingCount.aac';
+          'audio_${widget.firstName}_${widget.lastName}_${_currentLetter}_$_recordingCount.wav';
       String path = '${widget.folderPath}/$fileName';
       setState(() {
         _filePath = path;
         _isRecordingComplete = false;
       });
 
-      await _audioRecorder.startRecorder(toFile: path);
+      await _audioRecorder.startRecorder(toFile: path , codec: Codec.pcm16WAV);
       setState(() {
         _isRecording = true;
         _recordingDuration = 0;
@@ -98,7 +103,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
         });
 
         // Detener automáticamente a los 3 segundos
-        if (_recordingDuration >= 3) {
+        if (_recordingDuration >= 1) { //cambiar a 3 segundos
           _stopRecording();
         }
       });
@@ -162,7 +167,8 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
 
   void _nextLetter() {
     setState(() {
-      if (_recordingCount < 3) {
+      if (_recordingCount < 1) {
+
         _recordingCount++;
       } else if (_currentIndex < _letters.length - 1) {
         //_currentIndex = (_currentIndex + 1) % _letters.length;
@@ -173,11 +179,57 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
         // Si todas las letras están completadas, navegar a la pantalla de agradecimiento
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => ThankYouScreen()),
+          MaterialPageRoute(builder: (context) => ThankYouScreen(hasSymptoms: true,)),
         );
       }
       _isRecordingComplete = false; // Resetear para la siguiente letra
     });
+  }
+
+  Future<void> _navigateToThankYouScreen() async {
+    // Show a loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Text("Analizando resultados..."),
+            ],
+          ),
+        );
+      },
+    );
+
+    // Get the drawing file path (assuming it's named 'dibujo.png' in the user's folder)
+    final String drawingImagePath = '${widget.folderPath}/dibujo.png';
+    // Get the final audio file path for the last recording (or adjust if you need all audio files)
+    // For simplicity, we'll use the last recorded audio file path.
+    // In a real scenario, you might want to send all audio files or average their results.
+    final String finalAudioPath = _filePath ?? ''; // Use the last recorded audio path
+    print('Attempting to determine symptoms:');
+    print('Drawing Image Path: $drawingImagePath');
+    print('Last Recorded Audio Path: $finalAudioPath');
+    // Determine symptoms using the dedicated service
+    //bool hasSymptoms = await _symptomDetectionService.determineSymptoms(drawingImagePath, finalAudioPath);
+    bool hasSymptoms = false;
+    try {
+      hasSymptoms = await _symptomDetectionService.determineSymptoms(drawingImagePath, finalAudioPath);
+      print('Determined hasSymptoms: $hasSymptoms');
+    } catch (e) {
+      print('Error during symptom determination: $e');
+      // Handle error gracefully, perhaps show a different message on ThankYouScreen
+    }
+    // Dismiss the loading indicator
+    Navigator.of(context).pop();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => ThankYouScreen(hasSymptoms: hasSymptoms)),
+    );
   }
 
   String _formatDuration(int seconds) {
