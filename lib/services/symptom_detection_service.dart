@@ -8,17 +8,20 @@ class SymptomDetectionService {
 
   /// Determines if the user has symptoms based on handwriting and audio predictions.
   Future<bool> determineSymptoms(String drawingPath, String audioPath) async {
+    print('[DEBUG] determineSymptoms() fue llamado');
     double parkinsonProbabilityDrawing = 0.0;
     double parkinsonProbabilityAudio = 0.0;
 
     // Get handwriting prediction
-    final handwritingResult = await _predictionService.predictHandwriting(drawingPath);
-    if (handwritingResult != null && handwritingResult['probabilities'] != null) {
+    final handwritingResult =
+        await _predictionService.predictHandwriting(drawingPath);
+    if (handwritingResult != null &&
+        handwritingResult['probabilities'] != null) {
       String parkinsonProbStr = handwritingResult['probabilities']['Parkinson'];
       parkinsonProbStr = parkinsonProbStr.replaceAll('%', '');
       parkinsonProbabilityDrawing = double.parse(parkinsonProbStr) / 100.0;
-      print('Parsed Parkinson Probability (Drawing): ${parkinsonProbabilityDrawing * 100}%'); // Added
-
+      print(
+          'Parsed Parkinson Probability (Drawing): ${parkinsonProbabilityDrawing * 100}%'); // Added
     } else {
       print('Warning: Could not get valid handwriting prediction.');
     }
@@ -41,8 +44,10 @@ class SymptomDetectionService {
     }
 
     // Combine results (you can adjust this logic as needed)
-    final double combinedProbability = (parkinsonProbabilityDrawing + parkinsonProbabilityAudio) / 2.0;
-    print('Parkinson Probability - Drawing: ${parkinsonProbabilityDrawing * 100}%');
+    final double combinedProbability =
+        (parkinsonProbabilityDrawing + parkinsonProbabilityAudio) / 2.0;
+    print(
+        'Parkinson Probability - Drawing: ${parkinsonProbabilityDrawing * 100}%');
     print('Parkinson Probability - Audio: ${parkinsonProbabilityAudio * 100}%');
     print('Combined Parkinson Probability: ${combinedProbability * 100}%');
 

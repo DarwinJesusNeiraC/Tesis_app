@@ -4,7 +4,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class PredictionService {
-  final String _baseUrl = 'https://4eb2-45-231-83-2.ngrok-free.app'; // IMPORTANT: Replace with your stable API URL
+  final String _baseUrl =
+      'https://8916-45-231-83-4.ngrok-free.app'; // IMPORTANT: Replace with your stable API URL
 
   /// Makes a prediction request for handwriting.
   /// Returns the parsed JSON response or null on error.
@@ -30,11 +31,13 @@ class PredictionService {
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body) as Map<String, dynamic>;
-        print('Handwriting Prediction Raw Response: ${response.body}'); // Added for raw output
+        print(
+            'Handwriting Prediction Raw Response: ${response.body}'); // Added for raw output
         //return json.decode(response.body) as Map<String, dynamic>;
         return jsonResponse;
       } else {
-        print('Error predicting handwriting: ${response.statusCode} - ${response.body}');
+        print(
+            'Error predicting handwriting: ${response.statusCode} - ${response.body}');
         return null;
       }
     } catch (e) {
@@ -68,10 +71,12 @@ class PredictionService {
       if (response.statusCode == 200) {
         //return json.decode(response.body) as Map<String, dynamic>;
         final jsonResponse = json.decode(response.body) as Map<String, dynamic>;
-        print('Audio Prediction Raw Response: ${response.body}'); // Added for raw output
+        print(
+            'Audio Prediction Raw Response: ${response.body}'); // Added for raw output
         return jsonResponse;
       } else {
-        print('Error predicting audio: ${response.statusCode} - ${response.body}');
+        print(
+            'Error predicting audio: ${response.statusCode} - ${response.body}');
         return null;
       }
     } catch (e) {

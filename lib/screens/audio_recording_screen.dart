@@ -32,7 +32,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   bool _isPlaying = false;
   bool _isPaused = false;
   bool _isRecordingComplete = false;
-
+  bool _navigationCompleted = false;
   String _currentLetter = "A"; // Letra inicial
   int _recordingCount = 1; // Contador de grabaciones por letra (1, 2, 3)
   String? _filePath;
@@ -54,7 +54,10 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
 
   @override
   void dispose() {
-    print('DEBUG: AudioRecordingScreen is disposing. API calls will NOT be made if navigation did not complete.'); // <--- ADD THIS LINE
+    if (!_navigationCompleted) {
+      print(
+          'DEBUG: AudioRecordingScreen is disposing. API calls will NOT be made if navigation did not complete.'); // <--- ADD THIS LINE
+    }
     _audioRecorder.closeRecorder();
     _audioPlayer.closePlayer();
     _recordingTimer?.cancel();
@@ -90,7 +93,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
         _isRecordingComplete = false;
       });
 
-      await _audioRecorder.startRecorder(toFile: path , codec: Codec.pcm16WAV);
+      await _audioRecorder.startRecorder(toFile: path, codec: Codec.pcm16WAV);
       setState(() {
         _isRecording = true;
         _recordingDuration = 0;
@@ -103,7 +106,8 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
         });
 
         // Detener automáticamente a los 3 segundos
-        if (_recordingDuration >= 1) { //cambiar a 3 segundos
+        if (_recordingDuration >= 1) {
+          //cambiar a 3 segundos
           _stopRecording();
         }
       });
@@ -168,7 +172,6 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   void _nextLetter() {
     setState(() {
       if (_recordingCount < 1) {
-
         _recordingCount++;
       } else if (_currentIndex < _letters.length - 1) {
         //_currentIndex = (_currentIndex + 1) % _letters.length;
@@ -176,11 +179,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
         _currentLetter = _letters[_currentIndex];
         _recordingCount = 1;
       } else {
-        // Si todas las letras están completadas, navegar a la pantalla de agradecimiento
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ThankYouScreen(hasSymptoms: true,)),
-        );
+        _navigateToThankYouScreen();
       }
       _isRecordingComplete = false; // Resetear para la siguiente letra
     });
@@ -209,26 +208,46 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     // Get the final audio file path for the last recording (or adjust if you need all audio files)
     // For simplicity, we'll use the last recorded audio file path.
     // In a real scenario, you might want to send all audio files or average their results.
-    final String finalAudioPath = _filePath ?? ''; // Use the last recorded audio path
+    final String finalAudioPath =
+        _filePath ?? ''; // Use the last recorded audio path
     print('Attempting to determine symptoms:');
     print('Drawing Image Path: $drawingImagePath');
     print('Last Recorded Audio Path: $finalAudioPath');
     // Determine symptoms using the dedicated service
     //bool hasSymptoms = await _symptomDetectionService.determineSymptoms(drawingImagePath, finalAudioPath);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
     bool hasSymptoms = false;
     try {
-      hasSymptoms = await _symptomDetectionService.determineSymptoms(drawingImagePath, finalAudioPath);
+      hasSymptoms = await _symptomDetectionService.determineSymptoms(
+          drawingImagePath, finalAudioPath);
       print('Determined hasSymptoms: $hasSymptoms');
+      print('[DEBUG] Resultado del análisis: $hasSymptoms');
     } catch (e) {
       print('Error during symptom determination: $e');
       // Handle error gracefully, perhaps show a different message on ThankYouScreen
+    } finally {
+      // Cerrar el loader
+      Navigator.of(context).pop();
     }
-    // Dismiss the loading indicator
-    Navigator.of(context).pop();
 
+    _navigationCompleted = true;
+    // Dismiss the loading indicator
+    //Navigator.of(context).pop();
+    /*
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => ThankYouScreen(hasSymptoms: hasSymptoms)),
+    );
+    */
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ThankYouScreen(hasSymptoms: hasSymptoms),
+      ),
     );
   }
 
