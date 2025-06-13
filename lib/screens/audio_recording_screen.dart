@@ -100,7 +100,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       });
 
       // Inicia un temporizador para la grabación
-      _recordingTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      _recordingTimer = Timer.periodic(Duration(seconds: 3), (timer) {
         setState(() {
           _recordingDuration++;
         });
