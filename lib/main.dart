@@ -1,8 +1,6 @@
-import 'package:drawtesis/screens/audio_recording_screen.dart';
 import 'package:drawtesis/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'screens/user_form_screen.dart';
-import 'screens/draw_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 

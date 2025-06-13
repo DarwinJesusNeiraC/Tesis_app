@@ -5,7 +5,6 @@ import 'package:drawtesis/services/prediction_service.dart';
 import 'package:drawtesis/services/symptom_detection_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AudioRecordingScreen extends StatefulWidget {
@@ -36,6 +35,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   String _currentLetter = "A"; // Letra inicial
   int _recordingCount = 1; // Contador de grabaciones por letra (1, 2, 3)
   String? _filePath;
+  List<String> _recordedAudioPaths = []; // <-- NUEVO
 
   final List<String> _letters = ["A", "E", "I", "O", "U"];
   int _currentIndex = 0;
@@ -127,8 +127,13 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
         _isRecordingComplete = true;
       });
 
-      // Detiene el temporizador de grabación
       _recordingTimer?.cancel();
+
+      if (_filePath != null) {
+        _recordedAudioPaths.add(_filePath!);
+      }
+
+      // Detiene el temporizador de grabación
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Audio guardado en: $_filePath')),
@@ -208,11 +213,11 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     // Get the final audio file path for the last recording (or adjust if you need all audio files)
     // For simplicity, we'll use the last recorded audio file path.
     // In a real scenario, you might want to send all audio files or average their results.
-    final String finalAudioPath =
-        _filePath ?? ''; // Use the last recorded audio path
+    final List<String> allAudioPaths = _recordedAudioPaths;
+
     print('Attempting to determine symptoms:');
     print('Drawing Image Path: $drawingImagePath');
-    print('Last Recorded Audio Path: $finalAudioPath');
+    //print('Last Recorded Audio Path: $finalAudioPath');
     // Determine symptoms using the dedicated service
     //bool hasSymptoms = await _symptomDetectionService.determineSymptoms(drawingImagePath, finalAudioPath);
     showDialog(
@@ -222,9 +227,27 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     );
 
     bool hasSymptoms = false;
+    double drawingProbability = 0.0;
+    double audioProbability = 0.0;
+    double combinedProbability = 0.0;
     try {
-      hasSymptoms = await _symptomDetectionService.determineSymptoms(
-          drawingImagePath, finalAudioPath);
+      //hasSymptoms = await _symptomDetectionService.determineSymptoms(
+      //    drawingImagePath, finalAudioPath);
+      //hasSymptoms = await _symptomDetectionService.determineSymptoms(drawingImagePath, allAudioPaths);
+      final result = await _symptomDetectionService.determineSymptoms(
+        drawingImagePath,
+        allAudioPaths,
+      );
+
+      hasSymptoms = result['hasSymptoms'];
+      drawingProbability = result['drawingProbability'];
+      audioProbability = result['audioProbability'];
+      combinedProbability = result['combinedProbability'];
+
+      print('[DEBUG] Probabilidad (Dibujo): ${drawingProbability * 100}%');
+      print('[DEBUG] Probabilidad (Audio): ${audioProbability * 100}%');
+      print('[DEBUG] Probabilidad combinada: ${combinedProbability * 100}%');
+
       print('Determined hasSymptoms: $hasSymptoms');
       print('[DEBUG] Resultado del análisis: $hasSymptoms');
     } catch (e) {
@@ -244,9 +267,21 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       MaterialPageRoute(builder: (context) => ThankYouScreen(hasSymptoms: hasSymptoms)),
     );
     */
+    /*
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ThankYouScreen(hasSymptoms: hasSymptoms),
+      ),
+    );
+    */
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ThankYouScreen(
+          hasSymptoms: hasSymptoms,
+          drawingProbability: drawingProbability,
+          audioProbability: audioProbability,
+          combinedProbability: combinedProbability,
+        ),
       ),
     );
   }

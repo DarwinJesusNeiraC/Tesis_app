@@ -22,7 +22,7 @@ class PredictionService {
         Uri.parse('$_baseUrl/handwriting/predict'),
       );
       request.files.add(await http.MultipartFile.fromPath(
-        'image',
+        'file',
         imageFile.path,
       ));
 
@@ -48,23 +48,37 @@ class PredictionService {
 
   /// Makes a prediction request for audio.
   /// Returns the parsed JSON response or null on error.
-  Future<Map<String, dynamic>?> predictAudio(String audioPath) async {
-    try {
-      final audioFile = File(audioPath);
+  Future<Map<String, dynamic>?> predictAudio(List<String> audioPaths) async {
+    /*final audioFile = File(audioPath);
       if (!await audioFile.exists()) {
         print('Error: Audio file not found at $audioPath');
         return null;
       }
+      */
 
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$_baseUrl/audio/predict'),
-      );
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$_baseUrl/audio/predict'),
+    );
+
+    for (String path in audioPaths) {
+      final audioFile = File(path);
+      if (!await audioFile.exists()) {
+        print('Warning: Audio file not found at $path');
+        continue;
+      }
       request.files.add(await http.MultipartFile.fromPath(
-        'audio',
+        'files',
         audioFile.path,
       ));
+    }
 
+    if (request.files.isEmpty) {
+      print('Error: No valid audio files to upload.');
+      return null;
+    }
+
+    try {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 

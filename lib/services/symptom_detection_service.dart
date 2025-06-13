@@ -7,14 +7,17 @@ class SymptomDetectionService {
   SymptomDetectionService(this._predictionService);
 
   /// Determines if the user has symptoms based on handwriting and audio predictions.
-  Future<bool> determineSymptoms(String drawingPath, String audioPath) async {
+  Future<Map<String, dynamic>> determineSymptoms(
+      String drawingPath, List<String> audioPaths) async {
     print('[DEBUG] determineSymptoms() fue llamado');
     double parkinsonProbabilityDrawing = 0.0;
     double parkinsonProbabilityAudio = 0.0;
 
+    // ======== 1. Get handwriting prediction ========
     // Get handwriting prediction
     final handwritingResult =
         await _predictionService.predictHandwriting(drawingPath);
+
     if (handwritingResult != null &&
         handwritingResult['probabilities'] != null) {
       String parkinsonProbStr = handwritingResult['probabilities']['Parkinson'];
@@ -26,16 +29,20 @@ class SymptomDetectionService {
       print('Warning: Could not get valid handwriting prediction.');
     }
 
+    // ======== 2. Get audio predictions ========
     // Get audio prediction
-    final audioResult = await _predictionService.predictAudio(audioPath);
+    final audioResult = await _predictionService.predictAudio(audioPaths);
+
     if (audioResult != null && audioResult['individual_predictions'] is List) {
       int positivePredictions = 0;
       final predictions = audioResult['individual_predictions'] as List;
+
       for (var prediction in predictions) {
         if (prediction == 1) {
           positivePredictions++;
         }
       }
+
       if (predictions.isNotEmpty) {
         parkinsonProbabilityAudio = positivePredictions / predictions.length;
       }
@@ -53,7 +60,14 @@ class SymptomDetectionService {
 
     // Define your threshold for "hasSymptoms"
     const double symptomThreshold = 0.50; // 50%
+    final bool hasSymptoms = combinedProbability >= symptomThreshold;
 
-    return combinedProbability >= symptomThreshold;
+    //return combinedProbability >= symptomThreshold;
+    return {
+      'drawingProbability': parkinsonProbabilityDrawing,
+      'audioProbability': parkinsonProbabilityAudio,
+      'combinedProbability': combinedProbability,
+      'hasSymptoms': hasSymptoms,
+    };
   }
 }

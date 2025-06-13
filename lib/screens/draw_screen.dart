@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 import 'package:drawtesis/screens/audio_recording_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:path/path.dart';
 import 'package:flutter/rendering.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -32,7 +31,6 @@ class DrawScreen extends StatefulWidget {
 class _DrawScreenState extends State<DrawScreen> {
   List<Offset?> _points = [];
   GlobalKey _globalKey = GlobalKey();
-  String? _userFolderPath;
 
   Future<String> _createUserFolder() async {
     final directory = Directory('/storage/emulated/0/Download');
