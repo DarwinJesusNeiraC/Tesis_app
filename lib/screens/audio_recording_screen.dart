@@ -191,7 +191,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   void _nextStep() {
     setState(() {
       // We have 3 repetitions per letter.
-      if (_recordingCount < 3) {
+      if (_recordingCount < 1) {
         _recordingCount++;
       } else { 
         // Move to the next letter if available.

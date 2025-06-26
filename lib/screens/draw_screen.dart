@@ -15,6 +15,7 @@ class DrawScreen extends StatefulWidget {
   final bool isDominant;
 
   DrawScreen({
+    super.key,
     required this.firstName,
     required this.lastName,
     required this.gender,
@@ -29,14 +30,14 @@ class DrawScreen extends StatefulWidget {
 
 class _DrawScreenState extends State<DrawScreen> {
   List<Offset?> _points = [];
-  GlobalKey _globalKey = GlobalKey();
+  final GlobalKey _globalKey = GlobalKey();
 
   Future<String> _createUserFolder() async {
     final directory = Directory('/storage/emulated/0/Download');
     String folderName = "${widget.firstName}_${widget.lastName}";
     final userFolder = Directory('${directory.path}/$folderName');
 
-    if (!userFolder.existsSync()) {
+    if (!await userFolder.exists()) {
       await userFolder.create(recursive: true);
     }
     return userFolder.path;
@@ -55,28 +56,16 @@ class _DrawScreenState extends State<DrawScreen> {
     await file.writeAsString(content);
   }
 
-  Future<void> _saveToDownloads(Uint8List bytes, String fileName) async {
-    // Verificar permiso para Android
-    if (await Permission.storage.request().isGranted) {
-      final dir = Directory('/storage/emulated/0/Download');
-      final file = File('${dir.path}/$fileName');
-      await file.writeAsBytes(bytes);
-      print('Archivo guardado en ${file.path}');
-    } else {
-      throw Exception('No se otorgaron permisos de almacenamiento.');
-    }
-  }
-
   Future<void> _saveDrawing(BuildContext context) async {
     try {
       final folderPath = await _createUserFolder();
       await _saveUserInfo(folderPath);
 
-      final RenderRepaintBoundary? boundary = _globalKey.currentContext
-          ?.findRenderObject() as RenderRepaintBoundary?;
+      final RenderRepaintBoundary? boundary =
+          _globalKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) {
         throw Exception(
-            'No se pudo acceder al contexto del RenderRepaintBoundary');
+            'Could not access the RenderRepaintBoundary context');
       }
 
       final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
@@ -89,7 +78,7 @@ class _DrawScreenState extends State<DrawScreen> {
       final file = File(filePath);
       await file.writeAsBytes(pngBytes);
 
-      print('Imagen guardada en: $filePath');
+      print('Image saved at: $filePath');
 
       Navigator.push(
         context,
@@ -102,86 +91,49 @@ class _DrawScreenState extends State<DrawScreen> {
         ),
       );
     } catch (e) {
-      print('Error al guardar el dibujo: $e');
+      print('Error saving drawing: $e');
     }
   }
 
   void _clearDrawing() {
     setState(() => _points.clear());
   }
-
-  /*@override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Dibujar sobre la Espiral'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.save),
-            onPressed: () => _saveDrawing(context),
-          ),
-          IconButton(
-            icon: Icon(Icons.delete),
-            onPressed: _clearDrawing,
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Container(
-              width: 300, // Ajusta el tamaño aquí
-              height: 300, // Ajusta el tamaño aquí
-              child: Image.asset('assets/spiral.png', fit: BoxFit.contain),
+  
+  // --- Helper widget for styled buttons (copied from AudioRecordingScreen) ---
+  Widget _buildSideButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: Colors.grey.shade400),
             ),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.all(16),
+            elevation: 0,
           ),
-          RepaintBoundary(
-            key: _globalKey,
-            child: GestureDetector(
-              onPanUpdate: (details) {
-                setState(() {
-                  RenderBox renderBox = _globalKey.currentContext!
-                      .findRenderObject() as RenderBox;
-
-                  // Ajusta el cálculo de la posición
-                  Offset localPosition =
-                      renderBox.globalToLocal(details.globalPosition);
-
-                  // Asegúrate de que las coordenadas estén dentro del límite
-                  if (localPosition.dx >= 0 &&
-                      localPosition.dy >= 0 &&
-                      localPosition.dx <= renderBox.size.width &&
-                      localPosition.dy <= renderBox.size.height) {
-                    _points.add(localPosition);
-                  }
-                });
-              },
-              onPanEnd: (details) {
-                _points.add(null); // Marca el final de una línea
-              },
-              child: Container(
-                width:
-                    800, // Asegúrate de que coincida con el tamaño de la imagen
-                height:
-                    800, // Asegúrate de que coincida con el tamaño de la imagen
-                child: CustomPaint(
-                  painter: _DrawingPainter(points: _points),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+          child: Icon(icon, size: 30),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
     );
   }
-  */
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dibujar sobre la Espiral'),
-        automaticallyImplyLeading: true, // <- habilita la flecha
+        automaticallyImplyLeading: true, // <- enable back arrow
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -210,11 +162,11 @@ class _DrawScreenState extends State<DrawScreen> {
             Expanded(
                 child: Row(
               children: [
-                const SizedBox(height: 16),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Center(
                     child: AspectRatio(
-                      aspectRatio: 4 / 3,
+                      aspectRatio: 1, // Make it a square
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.black12),
@@ -265,25 +217,11 @@ class _DrawScreenState extends State<DrawScreen> {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    /*ElevatedButton.icon(
-                      onPressed: () => _saveDrawing(context),
-                      icon: Icon(Icons.save),
-                      label: Text('GUARDAR'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        minimumSize: Size(120, 50),
-                      ),
-                    ),
-                    */
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
+                    // --- UPDATED: Using the helper method for the clear button ---
+                    _buildSideButton(
+                      icon: Icons.delete,
+                      label: 'LIMPIAR',
                       onPressed: _clearDrawing,
-                      icon: Icon(Icons.delete),
-                      label: Text('LIMPIAR'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        minimumSize: Size(120, 50),
-                      ),
                     ),
                   ],
                 ),
@@ -293,12 +231,15 @@ class _DrawScreenState extends State<DrawScreen> {
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () => _saveDrawing(context),
-              child: const Text('SIGUIENTE'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple[800],
+                backgroundColor: const Color(0xFF6A1B9A),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                    const EdgeInsets.symmetric(horizontal: 50, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
+              child: const Text('SIGUIENTE', style: TextStyle(fontSize: 18, color: Colors.white)),
             ),
             const SizedBox(height: 16),
           ],

@@ -164,7 +164,7 @@ class ThankYouScreen extends StatelessWidget {
               const Divider(),
               const SizedBox(height: 10),
               const Text(
-                "Probabilidades detectadas:",
+                "Porcentajes de señales de Parkinson:",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
