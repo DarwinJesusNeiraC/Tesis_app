@@ -24,9 +24,9 @@ class DescriptionScreen extends StatelessWidget {
             ),
             SizedBox(height: 20),
             Text(
-              'Este test consiste en dos pruebas:\n\n'
-              '1. Prueba de dibujo: consiste en seguir la línea de la espiral.\n\n'
-              '2. Prueba de audio: consiste en decir las vocales A, E, I, O, U.\n',
+              'Consta de dos pruebas:\n\n'
+              '1. Prueba de dibujo: Traza la espiral con tu dedo, empezando desde el centro hacia afuera, siguiendo la línea lo más precisamente posible.\n\n'
+              '2. Prueba de Audio: Pronuncia en voz alta las vocales: A, E, I, O, U, una por una. Cada vocal debe durar aproximadamente 3 segundos.\n',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -35,7 +35,7 @@ class DescriptionScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.pushNamed(context, '/user_form');
               },
-              child: Text('ENTRAR'),
+              child: Text('SIGUIENTE'),
             ),
           ],
         ),
