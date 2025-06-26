@@ -90,7 +90,6 @@ class ThankYouScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Resultado del Análisis'),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
