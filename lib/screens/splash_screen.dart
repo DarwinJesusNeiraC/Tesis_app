@@ -12,12 +12,18 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
 
     // Navega a otra pantalla después de 3 segundos
-    Future.delayed(Duration(seconds: 3), () {
+    /*Future.delayed(Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => UserFormScreen()),
       );
+      
+    });*/
+
+    Future.delayed(Duration(seconds: 3), () {
+      Navigator.pushReplacementNamed(context, '/description');
     });
+
   }
 
   @override

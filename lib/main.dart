@@ -1,3 +1,4 @@
+import 'package:drawtesis/screens/description_screen.dart';
 import 'package:drawtesis/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'screens/user_form_screen.dart';
@@ -23,6 +24,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => SplashScreen(),
+        '/description': (context) => DescriptionScreen(), // <-- NUEVA RUTA
         '/user_form': (context) => UserFormScreen(),
         //'/draw': (context) => DrawScreen(),
         //'/audio': (context) => AudioRecordingScreen(), // Nueva ruta

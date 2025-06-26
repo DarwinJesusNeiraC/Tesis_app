@@ -105,9 +105,8 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
           _recordingDuration++;
         });
 
-        // Detener automáticamente a los 3 segundos
-        if (_recordingDuration >= 3) {
-          //cambiar a 3 segundos
+        // Detener automáticamente a los 2 segundos
+        if (_recordingDuration >= 2) {
           _stopRecording();
         }
       });
