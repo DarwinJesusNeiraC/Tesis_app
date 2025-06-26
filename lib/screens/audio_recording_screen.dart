@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:audioplayers/audioplayers.dart'; //audioplayers package
 import 'package:drawtesis/screens/thank_you_screen.dart';
 import 'package:drawtesis/services/prediction_service.dart';
 import 'package:drawtesis/services/symptom_detection_service.dart';
@@ -13,6 +14,7 @@ class AudioRecordingScreen extends StatefulWidget {
   final String folderPath;
 
   AudioRecordingScreen({
+    super.key,
     required this.firstName,
     required this.lastName,
     required this.folderPath,
@@ -23,26 +25,27 @@ class AudioRecordingScreen extends StatefulWidget {
 }
 
 class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
+  // --- Sound and Service Instances ---
   final FlutterSoundRecorder _audioRecorder = FlutterSoundRecorder();
   final FlutterSoundPlayer _audioPlayer = FlutterSoundPlayer();
+  final AudioPlayer _examplePlayer = AudioPlayer(); // Player for example sounds
   late final SymptomDetectionService _symptomDetectionService;
 
+  // --- State Management ---
   bool _isRecording = false;
-  bool _isPlaying = false;
-  bool _isPaused = false;
   bool _isRecordingComplete = false;
-  bool _navigationCompleted = false;
-  String _currentLetter = "A"; // Letra inicial
-  int _recordingCount = 1; // Contador de grabaciones por letra (1, 2, 3)
+  bool _navigationCompleted = false; // Prevents duplicate API calls on dispose
+  String _currentLetter = "A";
+  int _recordingCount = 1; // Repetition counter (1, 2, or 3)
   String? _filePath;
-  List<String> _recordedAudioPaths = []; // <-- NUEVO
+  final List<String> _recordedAudioPaths = []; // Stores paths for all recordings
 
   final List<String> _letters = ["A", "E", "I", "O", "U"];
   int _currentIndex = 0;
 
-  // Timer para la grabación
+  // --- Recording Timer ---
   Timer? _recordingTimer;
-  int _recordingDuration = 0; // Duración en segundos
+  int _recordingDuration = 0; // Duration in seconds
 
   @override
   void initState() {
@@ -56,18 +59,20 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   void dispose() {
     if (!_navigationCompleted) {
       print(
-          'DEBUG: AudioRecordingScreen is disposing. API calls will NOT be made if navigation did not complete.'); // <--- ADD THIS LINE
+          'DEBUG: AudioRecordingScreen is disposing. API calls will NOT be made if navigation did not complete.');
     }
     _audioRecorder.closeRecorder();
     _audioPlayer.closePlayer();
+    _examplePlayer.dispose(); // Dispose the example player
     _recordingTimer?.cancel();
     super.dispose();
   }
 
+  // --- Initialization Methods ---
   Future<void> _initRecorder() async {
     var status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
-      throw Exception('Permiso de micrófono denegado');
+      throw Exception('Microphone permission denied');
     }
     await _audioRecorder.openRecorder();
   }
@@ -76,44 +81,56 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     await _audioPlayer.openPlayer();
   }
 
+  // --- NEW: Function to play example audio ---
+  Future<void> _playExampleSound() async {
+    try {
+      // Assumes audio files are in 'assets/audio/' and named like 'A.wav', 'E.wav', etc.
+      String assetPath = 'audio/${_currentLetter}.wav';
+      await _examplePlayer.play(AssetSource(assetPath));
+    } catch (e) {
+      print("Error playing example sound: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not play example audio: $e')),
+      );
+    }
+  }
+
+  // --- Core Audio Logic ---
   Future<void> _startRecording() async {
     try {
-      final directory = Directory('/storage/emulated/0/Download');
-      if (!directory.existsSync()) {
-        directory.createSync();
-      }
-
-      //String fileName = '$_recordingCount$_currentLetter.aac';
-      //String path = '${directory.path}/$fileName';
+      // Defines the file path for the new recording.
       String fileName =
           'audio_${widget.firstName}_${widget.lastName}_${_currentLetter}_$_recordingCount.wav';
       String path = '${widget.folderPath}/$fileName';
+      
       setState(() {
         _filePath = path;
+        // Reset completion status for the new recording.
         _isRecordingComplete = false;
       });
 
       await _audioRecorder.startRecorder(toFile: path, codec: Codec.pcm16WAV);
+      
       setState(() {
         _isRecording = true;
         _recordingDuration = 0;
       });
 
-      // Inicia un temporizador para la grabación
-      _recordingTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      // Start a timer to automatically stop the recording after 2 seconds.
+      _recordingTimer?.cancel(); // Cancel any existing timer.
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         setState(() {
           _recordingDuration++;
         });
 
-        // Detener automáticamente a los 2 segundos
         if (_recordingDuration >= 2) {
           _stopRecording();
         }
       });
     } catch (e) {
-      print('Error al iniciar grabación: $e');
+      print('Error starting recording: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al iniciar grabación: $e')),
+        SnackBar(content: Text('Error starting recording: $e')),
       );
     }
   }
@@ -121,118 +138,105 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   Future<void> _stopRecording() async {
     try {
       await _audioRecorder.stopRecorder();
-      setState(() {
-        _isRecording = false;
-        _isRecordingComplete = true;
-      });
-
       _recordingTimer?.cancel();
 
-      if (_filePath != null) {
-        _recordedAudioPaths.add(_filePath!);
+      setState(() {
+        _isRecording = false;
+        _isRecordingComplete = true; // Mark recording as complete.
+      });
+
+      // Add the file path to our list for final analysis.
+      if (_filePath != null && !_recordedAudioPaths.contains(_filePath)) {
+          _recordedAudioPaths.add(_filePath!);
       }
-
-      // Detiene el temporizador de grabación
-
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Audio guardado en: $_filePath')),
+        SnackBar(content: Text('Audio saved successfully: $_filePath')),
       );
     } catch (e) {
-      print('Error al detener la grabación: $e');
+      print('Error stopping recording: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al detener la grabación: $e')),
+        SnackBar(content: Text('Error stopping recording: $e')),
       );
     }
   }
 
   Future<void> _playAudio() async {
-    try {
-      if (!_isRecordingComplete) {
-        throw Exception('Debe terminar de grabar antes de reproducir.');
-      }
+    // This button is disabled if recording isn't complete, so this check is a safeguard.
+    if (!_isRecordingComplete || _filePath == null) return;
 
-      if (_filePath != null && File(_filePath!).existsSync()) {
-        await _audioPlayer.startPlayer(
-          fromURI: _filePath,
-          whenFinished: () {
-            setState(() => _isPlaying = false);
-          },
-        );
-        setState(() {
-          _isPlaying = true;
-          _isPaused = false;
-        });
-      } else {
-        throw Exception('Archivo de audio no encontrado en $_filePath');
-      }
+    try {
+        if (File(_filePath!).existsSync()) {
+            await _audioPlayer.startPlayer(
+                fromURI: _filePath,
+                whenFinished: () {
+                    // You can add logic here for when playback finishes if needed.
+                    setState(() {}); 
+                },
+            );
+        } else {
+            throw Exception('Audio file not found at $_filePath');
+        }
     } catch (e) {
-      print('Error al reproducir el audio: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al reproducir el audio: $e')),
-      );
+        print('Error playing audio: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error playing audio: $e')),
+        );
     }
   }
+  
+  // --- Navigation Logic ---
 
-  void _nextLetter() {
+  /// Moves to the next repetition or the next letter.
+  void _nextStep() {
     setState(() {
-      if (_recordingCount < 1) {
+      // We have 3 repetitions per letter.
+      if (_recordingCount < 3) {
         _recordingCount++;
-      } else if (_currentIndex < _letters.length - 1) {
-        //_currentIndex = (_currentIndex + 1) % _letters.length;
-        _currentIndex++;
-        _currentLetter = _letters[_currentIndex];
-        _recordingCount = 1;
-      } else {
-        _navigateToThankYouScreen();
+      } else { 
+        // Move to the next letter if available.
+        if (_currentIndex < _letters.length - 1) {
+          _currentIndex++;
+          _currentLetter = _letters[_currentIndex];
+          _recordingCount = 1; // Reset repetition count for the new letter.
+        } else {
+          // All letters and repetitions are done, navigate to results.
+          _navigateToThankYouScreen();
+          return;
+        }
       }
-      _isRecordingComplete = false; // Resetear para la siguiente letra
+      // Reset the state for the next recording.
+      _isRecordingComplete = false;
+      _filePath = null;
     });
   }
 
+  /// Navigates to the results screen after processing the data.
   Future<void> _navigateToThankYouScreen() async {
-    // Show a loading indicator
+    // Show a loading indicator while processing.
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 20),
-              Text("Analizando resultados..."),
-            ],
-          ),
-        );
-      },
+      builder: (BuildContext context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text("Analyzing results..."),
+          ],
+        ),
+      ),
     );
 
-    // Get the drawing file path (assuming it's named 'dibujo.png' in the user's folder)
     final String drawingImagePath = '${widget.folderPath}/dibujo.png';
-    // Get the final audio file path for the last recording (or adjust if you need all audio files)
-    // For simplicity, we'll use the last recorded audio file path.
-    // In a real scenario, you might want to send all audio files or average their results.
     final List<String> allAudioPaths = _recordedAudioPaths;
-
-    print('Attempting to determine symptoms:');
-    print('Drawing Image Path: $drawingImagePath');
-    //print('Last Recorded Audio Path: $finalAudioPath');
-    // Determine symptoms using the dedicated service
-    //bool hasSymptoms = await _symptomDetectionService.determineSymptoms(drawingImagePath, finalAudioPath);
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
 
     bool hasSymptoms = false;
     double drawingProbability = 0.0;
     double audioProbability = 0.0;
     double combinedProbability = 0.0;
+
     try {
-      //hasSymptoms = await _symptomDetectionService.determineSymptoms(
-      //    drawingImagePath, finalAudioPath);
-      //hasSymptoms = await _symptomDetectionService.determineSymptoms(drawingImagePath, allAudioPaths);
       final result = await _symptomDetectionService.determineSymptoms(
         drawingImagePath,
         allAudioPaths,
@@ -242,37 +246,17 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       drawingProbability = result['drawingProbability'];
       audioProbability = result['audioProbability'];
       combinedProbability = result['combinedProbability'];
-
-      print('[DEBUG] Probabilidad (Dibujo): ${drawingProbability * 100}%');
-      print('[DEBUG] Probabilidad (Audio): ${audioProbability * 100}%');
-      print('[DEBUG] Probabilidad combinada: ${combinedProbability * 100}%');
-
-      print('Determined hasSymptoms: $hasSymptoms');
-      print('[DEBUG] Resultado del análisis: $hasSymptoms');
+      
     } catch (e) {
       print('Error during symptom determination: $e');
-      // Handle error gracefully, perhaps show a different message on ThankYouScreen
+      // Handle error gracefully.
     } finally {
-      // Cerrar el loader
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(); // Dismiss the loading dialog.
     }
 
     _navigationCompleted = true;
-    // Dismiss the loading indicator
-    //Navigator.of(context).pop();
-    /*
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => ThankYouScreen(hasSymptoms: hasSymptoms)),
-    );
-    */
-    /*
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ThankYouScreen(hasSymptoms: hasSymptoms),
-      ),
-    );
-    */
+    
+    // Navigate to the final screen with the results.
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ThankYouScreen(
@@ -285,149 +269,164 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     );
   }
 
+  // --- Helper Methods ---
   String _formatDuration(int seconds) {
     final minutes = seconds ~/ 60;
     final remainingSeconds = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _pauseAudio() async {
-    try {
-      await _audioPlayer.pausePlayer();
-      setState(() {
-        _isPaused = true;
-        _isPlaying = false;
-      });
-    } catch (e) {
-      print('Error al pausar el audio: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al pausar el audio: $e')),
-      );
-    }
-  }
-
-  Future<void> _resumeAudio() async {
-    try {
-      if (_filePath != null && File(_filePath!).existsSync()) {
-        await _audioPlayer.resumePlayer();
-        setState(() {
-          _isPaused = false;
-          _isPlaying = true;
-        });
-      } else {
-        throw Exception('Archivo de audio no encontrado en $_filePath');
-      }
-    } catch (e) {
-      print('Error al reanudar la reproducción: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al reanudar la reproducción: $e')),
-      );
-    }
-  }
-
+  // --- Build Method for UI ---
   @override
   Widget build(BuildContext context) {
+    // Determines if the main action buttons should be enabled.
+    final bool canInteract = !_isRecording;
+    final bool canProceed = _isRecordingComplete && canInteract;
+
     return Scaffold(
-        appBar: AppBar(
-          title: Text("Prueba de Audio"),
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(height: 20),
-              Text(
-                "PRUEBA DE AUDIO (AUDIO TEST)",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              Column(
+      appBar: AppBar(
+        title: const Text("Prueba de Audio"),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const Text(
+              "PRUEBA DE AUDIO (AUDIO TEST)",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            // Main content area
+            Expanded(
+              child: Row(
                 children: [
-                  Text(
-                    '$_currentLetter', // Mostrar letra
-                    style: TextStyle(
-                      fontSize: 80,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'Repetición: $_recordingCount de 3', // Mostrar contador de repetición
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blueGrey,
-                    ),
-                  ),
-                  Icon(Icons.mic, size: 100, color: Colors.black),
-                  if (_isRecording)
-                    Text(
-                      "Tiempo: ${_formatDuration(_recordingDuration)}",
-                      style: TextStyle(fontSize: 20, color: Colors.red),
-                    ),
-                ],
-              ),
-              Row(
-                children: [
+                  // Central display box
                   Expanded(
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: _isRecording ? null : _startRecording,
-                              icon: Icon(Icons.mic),
-                              label: Text("Grabar"),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "${_currentLetter * 7}...",
+                            style: const TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange,
                             ),
-                            ElevatedButton.icon(
-                              onPressed: _isRecording ? _stopRecording : null,
-                              icon: Icon(Icons.stop),
-                              label: Text("Detener"),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Repetición: $_recordingCount de 3',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blueGrey,
                             ),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed:
-                                  _isPlaying && !_isPaused ? _pauseAudio : null,
-                              icon: Icon(Icons.pause),
-                              label: Text("Pausar"),
+                          ),
+                          const SizedBox(height: 24),
+                          Icon(
+                            Icons.mic,
+                            size: 80,
+                            // Animate color when recording
+                            color: _isRecording ? Colors.redAccent : Colors.black,
+                          ),
+                           if (_isRecording)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16.0),
+                              child: Text(
+                                "Grabando... ${_formatDuration(_recordingDuration)}",
+                                style: const TextStyle(fontSize: 18, color: Colors.red),
+                              ),
                             ),
-                            ElevatedButton.icon(
-                              onPressed: _isPaused
-                                  ? _resumeAudio
-                                  : (_isRecordingComplete ? _playAudio : null),
-                              icon: Icon(Icons.play_arrow),
-                              label: Text("Reproducir"),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 16),
+                  // Side action buttons
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ElevatedButton(
-                        onPressed: _startRecording,
-                        child: Text("Regrabar"),
+                      _buildSideButton(
+                        icon: Icons.lightbulb_outline,
+                        label: 'EJEMPLO',
+                        // UPDATED: Now calls the function to play example audio
+                        onPressed: _playExampleSound, 
                       ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _isRecordingComplete ? _nextLetter : null,
-                        child: Text("Siguiente"),
+                      const SizedBox(height: 20),
+                      _buildSideButton(
+                        icon: Icons.mic,
+                        label: _isRecordingComplete ? 'REGRABAR' : 'GRABAR',
+                        onPressed: canInteract ? _startRecording : null,
+                      ),
+                      const SizedBox(height: 20),
+                      _buildSideButton(
+                        icon: Icons.play_arrow,
+                        label: 'REPRODUCIR',
+                        onPressed: canProceed ? _playAudio : null,
                       ),
                     ],
                   ),
                 ],
               ),
-              SizedBox(height: 20),
-            ],
+            ),
+            const SizedBox(height: 20),
+            // Bottom "Next" button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: canProceed ? _nextStep : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6A1B9A), // Purple color
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  "SIGUIENTE",
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A helper widget to create the styled side buttons.
+  Widget _buildSideButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: Colors.grey.shade400),
+            ),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.all(16),
+            elevation: 0,
           ),
-        ));
+          child: Icon(icon, size: 30),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
   }
 }

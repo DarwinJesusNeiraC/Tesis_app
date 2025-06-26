@@ -71,6 +71,7 @@ flutter:
   assets:
     - assets/spiral.png  # Agregas tu imagen aquí
     - assets/logo.png  # Agregas tu imagen aquí
+    - assets/audio/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

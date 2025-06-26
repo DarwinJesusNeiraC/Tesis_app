@@ -18,6 +18,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'App de Dibujo',
+      
       debugShowCheckedModeBanner: false, // Elimina el banner "Debug"
 
       theme: ThemeData(primarySwatch: Colors.blue),
