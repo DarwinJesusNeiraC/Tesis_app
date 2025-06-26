@@ -14,7 +14,6 @@ class DrawScreen extends StatefulWidget {
   final String handUsed;
   final bool isDominant;
 
-  // Constructor modificado con parámetros nombrados requeridos
   DrawScreen({
     required this.firstName,
     required this.lastName,
@@ -68,72 +67,6 @@ class _DrawScreenState extends State<DrawScreen> {
     }
   }
 
-/*
-  Future<void> _saveToStorage() async {
-    try {
-      // Obtiene el widget para capturar la imagen
-      final RenderRepaintBoundary? boundary = _globalKey.currentContext
-          ?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) {
-        throw Exception(
-            'No se pudo acceder al contexto del RenderRepaintBoundary');
-      }
-      //RenderRepaintBoundary boundary = _globalKey.currentContext!
-      //    .findRenderObject() as RenderRepaintBoundary;
-      final ui.Image originalImage = await boundary.toImage(pixelRatio: 3.0);
-      final ui.Size size = boundary.size;
-
-      // Crea un recorder para dibujar en un nuevo Canvas
-      final recorder = ui.PictureRecorder();
-      final canvas =
-          Canvas(recorder, Rect.fromLTWH(0, 0, size.width, size.height));
-
-      // Pinta el fondo blanco
-      canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Paint()..color = Colors.white,
-      );
-      // Dibuja la imagen original (los puntos)
-      final paint = Paint();
-      canvas.drawImage(originalImage, Offset.zero, paint);
-
-      // Renderiza la imagen final
-      final ui.Picture picture = recorder.endRecording();
-      final ui.Image finalImage = await picture.toImage(
-        size.width.toInt(),
-        size.height.toInt(),
-      );
-      ByteData? byteData =
-          await finalImage.toByteData(format: ui.ImageByteFormat.png);
-      Uint8List pngBytes = byteData!.buffer.asUint8List();
-
-      // Guarda la imagen localmente
-      //final directory = await getApplicationDocumentsDirectory();
-      final directory = Directory('/storage/emulated/0/Download');
-      String fileName =
-          "${widget.userName}_${widget.gender}_${widget.age}_${widget.handUsed}_${widget.isDominant ? 'Dominante' : 'NoDominante'}.png";
-      File imgFile = File('${directory.path}/$fileName');
-      //await imgFile.writeAsBytes(pngBytes);
-
-      await _saveToDownloads(pngBytes,
-          "${widget.userName}_${widget.gender}_${widget.age}_${widget.handUsed}_${widget.isDominant ? 'Dominante' : 'NoDominante'}.png");
-      print('Imagen guardada en: ${imgFile.path}');
-      /*ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Imagen guardada: $fileName')),
-      );
-    */
-      print('Imagen guardada');
-    } catch (e) {
-      print('Error al guardar la imagen: $e');
-      /*
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar la imagen: $e')),
-      );
-      */
-    }
-  }
-  */
-
   Future<void> _saveDrawing(BuildContext context) async {
     try {
       final folderPath = await _createUserFolder();
@@ -158,11 +91,6 @@ class _DrawScreenState extends State<DrawScreen> {
 
       print('Imagen guardada en: $filePath');
 
-      /*
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Dibujo guardado en: $filePath')),
-      );
-      */
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -175,11 +103,6 @@ class _DrawScreenState extends State<DrawScreen> {
       );
     } catch (e) {
       print('Error al guardar el dibujo: $e');
-      /*
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar el dibujo: $e')),
-      );
-      */
     }
   }
 
@@ -187,7 +110,7 @@ class _DrawScreenState extends State<DrawScreen> {
     setState(() => _points.clear());
   }
 
-  @override
+  /*@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -248,6 +171,138 @@ class _DrawScreenState extends State<DrawScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+  */
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dibujar sobre la Espiral'),
+        automaticallyImplyLeading: true, // <- habilita la flecha
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black,
+      ),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            const Text(
+              'PRUEBA ASPIRAL (ASPIRAL TEST)',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.indigo,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Por favor, sigue las líneas iniciando del centro para afuera',
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+                child: Row(
+              children: [
+                const SizedBox(height: 16),
+                Expanded(
+                  child: Center(
+                    child: AspectRatio(
+                      aspectRatio: 4 / 3,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.black12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: Image.asset(
+                                'assets/spiral.png',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            RepaintBoundary(
+                              key: _globalKey,
+                              child: GestureDetector(
+                                onPanUpdate: (details) {
+                                  RenderBox box = _globalKey.currentContext!
+                                      .findRenderObject() as RenderBox;
+                                  Offset localPosition =
+                                      box.globalToLocal(details.globalPosition);
+
+                                  if (localPosition.dx >= 0 &&
+                                      localPosition.dy >= 0 &&
+                                      localPosition.dx <= box.size.width &&
+                                      localPosition.dy <= box.size.height) {
+                                    setState(() {
+                                      _points.add(localPosition);
+                                    });
+                                  }
+                                },
+                                onPanEnd: (_) => _points.add(null),
+                                child: CustomPaint(
+                                  painter: _DrawingPainter(points: _points),
+                                  child: Container(
+                                    color: Colors.transparent,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    /*ElevatedButton.icon(
+                      onPressed: () => _saveDrawing(context),
+                      icon: Icon(Icons.save),
+                      label: Text('GUARDAR'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        minimumSize: Size(120, 50),
+                      ),
+                    ),
+                    */
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: _clearDrawing,
+                      icon: Icon(Icons.delete),
+                      label: Text('LIMPIAR'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        minimumSize: Size(120, 50),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 16),
+              ],
+            )),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _saveDrawing(context),
+              child: const Text('SIGUIENTE'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple[800],
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
