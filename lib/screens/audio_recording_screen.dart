@@ -7,6 +7,8 @@ import 'package:drawtesis/services/symptom_detection_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
 
 class AudioRecordingScreen extends StatefulWidget {
   final String firstName;
@@ -214,6 +216,24 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   /// Navigates to the results screen after processing the data.
   Future<void> _navigateToThankYouScreen() async {
     // Show a loading indicator while processing.
+    final connectivityResult = await Connectivity().checkConnectivity();
+    final hasInternet = connectivityResult != ConnectivityResult.none;
+    if (!hasInternet) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Sin conexión"),
+          content: Text("Por favor, conéctate a Internet para enviar los datos."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("OK"),
+            ),
+          ],
+        ),
+      );
+      return; // Sale de la función sin hacer nada más
+    }
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -222,7 +242,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
           children: [
             CircularProgressIndicator(),
             SizedBox(width: 20),
-            Text("Analyzing results..."),
+            Text("Analizando resultados..."),
           ],
         ),
       ),
