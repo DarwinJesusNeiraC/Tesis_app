@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:flutter/rendering.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
 
 class DrawScreen extends StatefulWidget {
   final String firstName;
@@ -33,13 +34,20 @@ class _DrawScreenState extends State<DrawScreen> {
   final GlobalKey _globalKey = GlobalKey();
 
   Future<String> _createUserFolder() async {
-    final directory = Directory('/storage/emulated/0/Download');
-    String folderName = "${widget.firstName}_${widget.lastName}";
-    final userFolder = Directory('${directory.path}/$folderName');
+    final Directory appDocDir = await getApplicationDocumentsDirectory(); // carpeta segura
+    final Directory usersDir = Directory('${appDocDir.path}/users');
+
+    if (!await usersDir.exists()) {
+      await usersDir.create(recursive: true);
+    }
+
+    final String folderName = "${widget.firstName}_${widget.lastName}";
+    final Directory userFolder = Directory('${usersDir.path}/$folderName');
 
     if (!await userFolder.exists()) {
       await userFolder.create(recursive: true);
     }
+
     return userFolder.path;
   }
 
