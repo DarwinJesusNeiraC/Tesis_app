@@ -1,24 +1,19 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart'; //audioplayers package
+import 'package:drawtesis/models/user_data.dart';
 import 'package:drawtesis/screens/thank_you_screen.dart';
 import 'package:drawtesis/services/prediction_service.dart';
 import 'package:drawtesis/services/symptom_detection_service.dart';
+import 'package:drawtesis/storage/user_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AudioRecordingScreen extends StatefulWidget {
-  final String firstName;
-  final String lastName;
-  final String folderPath;
+  final UserData user;
 
-  AudioRecordingScreen({
-    super.key,
-    required this.firstName,
-    required this.lastName,
-    required this.folderPath,
-  });
+  const AudioRecordingScreen({Key? key, required this.user}) : super(key: key);
 
   @override
   _AudioRecordingScreenState createState() => _AudioRecordingScreenState();
@@ -38,7 +33,8 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   String _currentLetter = "A";
   int _recordingCount = 1; // Repetition counter (1, 2, or 3)
   String? _filePath;
-  final List<String> _recordedAudioPaths = []; // Stores paths for all recordings
+  final List<String> _recordedAudioPaths =
+      []; // Stores paths for all recordings
 
   final List<String> _letters = ["A", "E", "I", "O", "U"];
   int _currentIndex = 0;
@@ -100,9 +96,10 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     try {
       // Defines the file path for the new recording.
       String fileName =
-          'audio_${widget.firstName}_${widget.lastName}_${_currentLetter}_$_recordingCount.wav';
-      String path = '${widget.folderPath}/$fileName';
-      
+          'audio_${widget.user.firstName}_${widget.user.lastName}_${_currentLetter}_$_recordingCount.wav';
+      String folderPath = await UserStorage.getUserFolder(widget.user);
+      String path = '$folderPath/$fileName';
+
       setState(() {
         _filePath = path;
         // Reset completion status for the new recording.
@@ -110,7 +107,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       });
 
       await _audioRecorder.startRecorder(toFile: path, codec: Codec.pcm16WAV);
-      
+
       setState(() {
         _isRecording = true;
         _recordingDuration = 0;
@@ -147,9 +144,9 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
 
       // Add the file path to our list for final analysis.
       if (_filePath != null && !_recordedAudioPaths.contains(_filePath)) {
-          _recordedAudioPaths.add(_filePath!);
+        _recordedAudioPaths.add(_filePath!);
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Audio saved successfully: $_filePath')),
       );
@@ -166,25 +163,25 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     if (!_isRecordingComplete || _filePath == null) return;
 
     try {
-        if (File(_filePath!).existsSync()) {
-            await _audioPlayer.startPlayer(
-                fromURI: _filePath,
-                whenFinished: () {
-                    // You can add logic here for when playback finishes if needed.
-                    setState(() {}); 
-                },
-            );
-        } else {
-            throw Exception('Audio file not found at $_filePath');
-        }
-    } catch (e) {
-        print('Error playing audio: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error playing audio: $e')),
+      if (File(_filePath!).existsSync()) {
+        await _audioPlayer.startPlayer(
+          fromURI: _filePath,
+          whenFinished: () {
+            // You can add logic here for when playback finishes if needed.
+            setState(() {});
+          },
         );
+      } else {
+        throw Exception('Audio file not found at $_filePath');
+      }
+    } catch (e) {
+      print('Error playing audio: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error playing audio: $e')),
+      );
     }
   }
-  
+
   // --- Navigation Logic ---
 
   /// Moves to the next repetition or the next letter.
@@ -193,7 +190,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       // We have 3 repetitions per letter.
       if (_recordingCount < 1) {
         _recordingCount++;
-      } else { 
+      } else {
         // Move to the next letter if available.
         if (_currentIndex < _letters.length - 1) {
           _currentIndex++;
@@ -228,7 +225,8 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       ),
     );
 
-    final String drawingImagePath = '${widget.folderPath}/dibujo.png';
+    final String folderPath = await UserStorage.getUserFolder(widget.user);
+    final String drawingImagePath = '$folderPath/dibujo.png';
     final List<String> allAudioPaths = _recordedAudioPaths;
 
     bool hasSymptoms = false;
@@ -246,7 +244,6 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       drawingProbability = result['drawingProbability'];
       audioProbability = result['audioProbability'];
       combinedProbability = result['combinedProbability'];
-      
     } catch (e) {
       print('Error during symptom determination: $e');
       // Handle error gracefully.
@@ -255,7 +252,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     }
 
     _navigationCompleted = true;
-    
+
     // Navigate to the final screen with the results.
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -335,14 +332,16 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
                             Icons.mic,
                             size: 80,
                             // Animate color when recording
-                            color: _isRecording ? Colors.redAccent : Colors.black,
+                            color:
+                                _isRecording ? Colors.redAccent : Colors.black,
                           ),
-                           if (_isRecording)
+                          if (_isRecording)
                             Padding(
                               padding: const EdgeInsets.only(top: 16.0),
                               child: Text(
                                 "Grabando... ${_formatDuration(_recordingDuration)}",
-                                style: const TextStyle(fontSize: 18, color: Colors.red),
+                                style: const TextStyle(
+                                    fontSize: 18, color: Colors.red),
                               ),
                             ),
                         ],
@@ -358,7 +357,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
                         icon: Icons.lightbulb_outline,
                         label: 'EJEMPLO',
                         // UPDATED: Now calls the function to play example audio
-                        onPressed: _playExampleSound, 
+                        onPressed: _playExampleSound,
                       ),
                       const SizedBox(height: 20),
                       _buildSideButton(

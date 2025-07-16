@@ -2,14 +2,9 @@ import 'package:drawtesis/screens/description_screen.dart';
 import 'package:drawtesis/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'screens/user_form_screen.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
   runApp(MyApp());
 }
 
@@ -18,7 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'App de Dibujo',
-      
+
       debugShowCheckedModeBanner: false, // Elimina el banner "Debug"
 
       theme: ThemeData(primarySwatch: Colors.blue),

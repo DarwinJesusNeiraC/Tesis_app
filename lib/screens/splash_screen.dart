@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'user_form_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -11,19 +10,9 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    // Navega a otra pantalla después de 3 segundos
-    /*Future.delayed(Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => UserFormScreen()),
-      );
-      
-    });*/
-
     Future.delayed(Duration(seconds: 3), () {
       Navigator.pushReplacementNamed(context, '/description');
     });
-
   }
 
   @override
