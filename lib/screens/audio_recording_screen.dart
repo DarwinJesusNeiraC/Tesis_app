@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart'; //audioplayers package
+import 'package:drawtesis/helpers/symptom_helper.dart';
 import 'package:drawtesis/models/user_data.dart';
 import 'package:drawtesis/screens/thank_you_screen.dart';
 import 'package:drawtesis/services/prediction_service.dart';
@@ -24,7 +25,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   final FlutterSoundRecorder _audioRecorder = FlutterSoundRecorder();
   final FlutterSoundPlayer _audioPlayer = FlutterSoundPlayer();
   final AudioPlayer _examplePlayer = AudioPlayer(); // Player for example sounds
-  late final SymptomDetectionService _symptomDetectionService;
+  late final SymptomHelper _symptomHelper;
 
   // --- State Management ---
   bool _isRecording = false;
@@ -48,7 +49,9 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     super.initState();
     _initRecorder();
     _initPlayer();
-    _symptomDetectionService = SymptomDetectionService(PredictionService());
+    _symptomHelper =
+        SymptomHelper(SymptomDetectionService(PredictionService()));
+    //_symptomDetectionService = SymptomDetectionService(PredictionService());
   }
 
   @override
@@ -211,58 +214,13 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   /// Navigates to the results screen after processing the data.
   Future<void> _navigateToThankYouScreen() async {
     // Show a loading indicator while processing.
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) => const AlertDialog(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 20),
-            Text("Analyzing results..."),
-          ],
-        ),
-      ),
-    );
-
     final String folderPath = await UserStorage.getUserFolder(widget.user);
     final String drawingImagePath = '$folderPath/dibujo.png';
     final List<String> allAudioPaths = _recordedAudioPaths;
-
-    bool hasSymptoms = false;
-    double drawingProbability = 0.0;
-    double audioProbability = 0.0;
-    double combinedProbability = 0.0;
-
-    try {
-      final result = await _symptomDetectionService.determineSymptoms(
-        drawingImagePath,
-        allAudioPaths,
-      );
-
-      hasSymptoms = result['hasSymptoms'];
-      drawingProbability = result['drawingProbability'];
-      audioProbability = result['audioProbability'];
-      combinedProbability = result['combinedProbability'];
-    } catch (e) {
-      print('Error during symptom determination: $e');
-      // Handle error gracefully.
-    } finally {
-      Navigator.of(context).pop(); // Dismiss the loading dialog.
-    }
-
-    _navigationCompleted = true;
-
-    // Navigate to the final screen with the results.
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ThankYouScreen(
-          hasSymptoms: hasSymptoms,
-          drawingProbability: drawingProbability,
-          audioProbability: audioProbability,
-          combinedProbability: combinedProbability,
-        ),
-      ),
+    await _symptomHelper.analyzeAndNavigate(
+      context: context,
+      drawingPath: drawingImagePath,
+      audioPaths: allAudioPaths,
     );
   }
 

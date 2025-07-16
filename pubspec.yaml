@@ -47,6 +47,7 @@ dependencies:
   flutter_sound: ^9.2.13
   uuid: ^4.0.0
   http: ^1.2.1
+  connectivity_plus: ^6.0.3
 
 dev_dependencies:
   flutter_test:

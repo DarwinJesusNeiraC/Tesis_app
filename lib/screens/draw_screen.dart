@@ -6,7 +6,6 @@ import 'package:drawtesis/storage/user_storage.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:flutter/rendering.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class DrawScreen extends StatefulWidget {
   final UserData user;
