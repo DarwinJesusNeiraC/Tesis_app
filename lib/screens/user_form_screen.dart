@@ -1,3 +1,4 @@
+import 'package:drawtesis/utils/input_validators.dart';
 import 'package:flutter/material.dart';
 import 'draw_screen.dart';
 import 'package:drawtesis/models/user_data.dart';
@@ -22,8 +23,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
     if (_formKey.currentState!.validate()) {
       //_formKey.currentState!.save();
       final user = UserData(
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
+        firstName: InputValidators.sanitizeName(_firstNameController.text),
+        lastName: InputValidators.sanitizeName(_lastNameController.text),
         age: int.parse(_ageController.text.trim()),
         gender: _gender,
         handUsed: _handUsed,
@@ -59,22 +60,16 @@ class _UserFormScreenState extends State<UserFormScreen> {
                       TextFormField(
                         controller: _firstNameController,
                         decoration: InputDecoration(labelText: 'Nombre'),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Por favor ingresa tu nombre';
-                          }
-                          return null;
-                        },
+                        validator: (value) =>
+                            InputValidators.validateNameOrSurname(value,
+                                fieldName: 'nombre'),
                       ),
                       TextFormField(
                         controller: _lastNameController,
                         decoration: InputDecoration(labelText: 'Apellido'),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Por favor ingresa tu apellido';
-                          }
-                          return null;
-                        },
+                        validator: (value) =>
+                            InputValidators.validateNameOrSurname(value,
+                                fieldName: 'apellido'),
                       ),
                       TextFormField(
                         controller: _ageController,

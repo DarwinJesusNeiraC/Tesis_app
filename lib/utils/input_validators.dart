@@ -16,43 +16,41 @@ class InputValidators {
     'Ü': 'u',
   };
 
-  /// Sanitiza un nombre/apellido:
-  /// - Reemplaza tildes, diéresis.
-  /// - Elimina símbolos.
-  /// - Reemplaza espacios por guiones bajos.
+  /// Sanitiza un nombre o apellido para guardar archivos:
+  /// - Reemplaza acentos.
+  /// - Elimina espacios extremos.
+  /// - Reemplaza espacios intermedios por "_".
   /// - Convierte todo a minúsculas.
   static String sanitizeName(String input) {
     String cleaned = input.trim();
 
-    // Reemplazar tildes/dieresis
+    // Reemplazar tildes y diéresis
     _accentMap.forEach((accent, plain) {
       cleaned = cleaned.replaceAll(accent, plain);
     });
 
-    // Eliminar caracteres especiales (solo letras, números, espacios)
-    cleaned = cleaned.replaceAll(RegExp(r'[^\w\s]'), '');
+    // Eliminar cualquier carácter especial excepto letras y espacios
+    cleaned = cleaned.replaceAll(RegExp(r'[^a-zA-Z\s]'), '');
 
     // Normalizar espacios múltiples
     cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ');
 
-    // Reemplazar espacios intermedios por _
+    // Reemplazar espacios intermedios por "_"
     cleaned = cleaned.replaceAll(' ', '_');
 
     return cleaned.toLowerCase();
   }
 
-  /// Valida que sea un nombre o apellido válido.
+  /// Valida que el nombre o apellido tenga solo letras y espacios.
   static String? validateNameOrSurname(String? value,
       {String fieldName = 'campo'}) {
     if (value == null || value.trim().isEmpty) {
       return 'Por favor ingresa tu $fieldName';
     }
 
-    final sanitized = sanitizeName(value);
-
-    final validPattern = RegExp(r'^[a-z0-9_]+$');
-    if (!validPattern.hasMatch(sanitized)) {
-      return 'Solo letras sin acentos, números y guiones bajos. Sin símbolos.';
+    final regex = RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$');
+    if (!regex.hasMatch(value.trim())) {
+      return 'El $fieldName solo debe contener letras y espacios (sin números ni símbolos)';
     }
 
     return null;
