@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart'; //audioplayers package
 import 'package:drawtesis/helpers/symptom_helper.dart';
 import 'package:drawtesis/models/user_data.dart';
-import 'package:drawtesis/screens/thank_you_screen.dart';
+//import 'package:drawtesis/screens/thank_you_screen.dart';
 import 'package:drawtesis/services/prediction_service.dart';
 import 'package:drawtesis/services/symptom_detection_service.dart';
 import 'package:drawtesis/storage/user_storage.dart';
@@ -13,7 +13,6 @@ import 'package:permission_handler/permission_handler.dart';
 
 class AudioRecordingScreen extends StatefulWidget {
   final UserData user;
-
   const AudioRecordingScreen({Key? key, required this.user}) : super(key: key);
 
   @override
@@ -88,9 +87,11 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       await _examplePlayer.play(AssetSource(assetPath));
     } catch (e) {
       print("Error playing example sound: $e");
+      /*
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not play example audio: $e')),
       );
+      */
     }
   }
 
@@ -112,7 +113,9 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       await _audioRecorder.startRecorder(toFile: path, codec: Codec.pcm16WAV);
 
       setState(() {
+        _filePath = path;
         _isRecording = true;
+        _isRecordingComplete = false;
         _recordingDuration = 0;
       });
 
@@ -140,19 +143,19 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       await _audioRecorder.stopRecorder();
       _recordingTimer?.cancel();
 
-      setState(() {
-        _isRecording = false;
-        _isRecordingComplete = true; // Mark recording as complete.
-      });
-
       // Add the file path to our list for final analysis.
       if (_filePath != null && !_recordedAudioPaths.contains(_filePath)) {
         _recordedAudioPaths.add(_filePath!);
       }
-
+      
+      setState(() {
+        _isRecording = false;
+        _isRecordingComplete = true; // Mark recording as complete.
+      });
+/*
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Audio saved successfully: $_filePath')),
-      );
+      );*/
     } catch (e) {
       print('Error stopping recording: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -232,6 +235,140 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   }
 
   // --- Build Method for UI ---
+
+  @override
+  Widget build(BuildContext context) {
+    final bool canProceed = _isRecordingComplete && !_isRecording;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.black54),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  Image.asset('assets/logo.png', height: 40),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'PRUEBA DE AUDIO',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF4A148C)),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Sostén la vocal indicada por 3 segundos.',
+                style: TextStyle(fontSize: 16, color: Colors.black54),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200, width: 2),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            /*Text(
+                              _currentLetter,
+                              style: const TextStyle(fontSize: 100, fontWeight: FontWeight.bold, color: Colors.purple),
+                            ),*/
+                            Text(
+                              "${_currentLetter * 3}...",
+                              style: const TextStyle(
+                                fontSize: 70,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Repetición: $_recordingCount de 3',
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.blueGrey),
+                            ),
+                            const SizedBox(height: 24),
+                            Icon(
+                              Icons.mic,
+                              size: 80,
+                              color: _isRecording ? Colors.redAccent : Colors.black,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildSideButton(icon: Icons.lightbulb_outline, label: 'EJEMPLO', onPressed: _playExampleSound),
+                        _buildSideButton(icon: Icons.mic, label: _isRecordingComplete ? 'REGRABAR' : 'GRABAR', onPressed: !_isRecording ? _startRecording : null),
+                        _buildSideButton(icon: Icons.play_arrow, label: 'REPRODUCIR', onPressed: canProceed ? _playAudio : null),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: canProceed ? _nextStep : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6A1B9A),
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('SIGUIENTE', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSideButton({required IconData icon, required String label, VoidCallback? onPressed}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black54,
+            disabledForegroundColor: Colors.grey.shade300,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.all(20),
+            elevation: 2,
+            shadowColor: Colors.grey.withOpacity(0.2),
+          ),
+          child: Icon(icon, size: 30),
+        ),
+        const SizedBox(height: 8),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
+
+
+/*
   @override
   Widget build(BuildContext context) {
     // Determines if the main action buttons should be enabled.
@@ -387,3 +524,4 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     );
   }
 }
+*/
