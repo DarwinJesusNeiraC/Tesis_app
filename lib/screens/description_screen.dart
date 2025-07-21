@@ -16,16 +16,16 @@ class DescriptionScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.black54),
-                    onPressed: () {
-                      // If you want the back button to work, you might need to change
-                      // how you handle navigation, e.g., using Navigator.pop(context)
-                      // For now, it's just a visual element.
-                    },
+                  // This button is for visual consistency; it won't do anything on this screen
+                  // as there's nowhere to go back to from here.
+                  Opacity(
+                    opacity: 0,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios),
+                      onPressed: () {},
+                    ),
                   ),
-                  // Placeholder for your logo
-                  const Icon(Icons.biotech, color: Colors.purple, size: 30),
+                  Image.asset('assets/logo.png', height: 40),
                 ],
               ),
               const Spacer(flex: 1),
@@ -78,11 +78,11 @@ class DescriptionScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     'SIGUIENTE',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
+                    style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
-              const Spacer(flex: 1),
+              //const Spacer(flex: 1),
             ],
           ),
         ),
@@ -118,13 +118,14 @@ class DescriptionScreen extends StatelessWidget {
                     color: Colors.purple,
                   ),
                 ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     instructions[index],
                     style: const TextStyle(
                       fontSize: 16,
                       color: Colors.black54,
-                      height: 1.4, // Improved line spacing
+                      height: 1.5, // Improved line spacing
                     ),
                   ),
                 ),
