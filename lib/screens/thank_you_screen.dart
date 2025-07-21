@@ -8,6 +8,7 @@ class ThankYouScreen extends StatelessWidget {
 
   //onst ThankYouScreen({Key? key, required this.hasSymptoms}) : super(key: key);
   const ThankYouScreen({
+    super.key,
     required this.hasSymptoms,
     required this.drawingProbability,
     required this.audioProbability,
@@ -45,47 +46,9 @@ class ThankYouScreen extends StatelessWidget {
       };
     }
   }
-
-  String _getRiskMessage(double combinedProbability) {
-    // Rangos: <30% → Bajo, 30–70% → Moderado, >70% → Alto
-    if (combinedProbability < 0.30) {
-      return "No se detectaron indicios significativos de Parkinson.\n\n"
-          "Este es un análisis preventivo. ¡Sigue cuidando tu salud!";
-    } else if (combinedProbability < 0.70) {
-      return "Se encontraron señales moderadas que podrían estar relacionadas con Parkinson.\n\n"
-          "Te recomendamos consultar con un profesional médico para una evaluación más completa.";
-    } else {
-      return "Se detectaron indicios relevantes compatibles con síntomas de Parkinson.\n\n"
-          "Por favor, consulta con un médico especialista para una evaluación clínica detallada.";
-    }
-  }
-
-  IconData get _iconData => combinedProbability < 0.30
-      ? Icons.check_circle_outline
-      : combinedProbability < 0.70
-          ? Icons.warning_amber_rounded
-          : Icons.health_and_safety;
-
-  Color get _iconColor => combinedProbability < 0.30
-      ? Colors.green
-      : combinedProbability < 0.70
-          ? Colors.orange
-          : Colors.red;
-
+/*
   @override
   Widget build(BuildContext context) {
-    /*// Mensajes condicionales
-    final String title = "Resultado Preliminar";
-    final String message = hasSymptoms
-        ? "Existe una posible presencia de síntomas relacionados con Parkinson. "
-            "Recomendamos consultar con un especialista para una evaluación médica completa y la validación del resultado"
-        : "No se detectan señales claras de Parkinson."
-            "Sugerimos una revisión médica periódica para mantener su bienestar.";
-    final IconData icon =
-        hasSymptoms ? Icons.warning_amber_rounded : Icons.check_circle_outline;
-    final Color iconColor = hasSymptoms ? Colors.orange : Colors.green;
-    */
-    //final message = _getRiskMessage(combinedProbability);
     final result = _getResultConfig(combinedProbability);
     return Scaffold(
       backgroundColor: Colors.white,
@@ -149,7 +112,7 @@ class ThankYouScreen extends StatelessWidget {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF781344), // Color vino
+                  backgroundColor: Color(0xFF6A1B9A), // Color vino
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
@@ -157,7 +120,7 @@ class ThankYouScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
-                child: const Text('SALIR'),
+                child: const Text('VOLVER AL INICIO'),
               ),
               const SizedBox(height: 20),
               const Divider(),
@@ -177,7 +140,9 @@ class ThankYouScreen extends StatelessWidget {
     );
   }
 }
-  /*
+
+
+  
     return Scaffold(
       appBar: AppBar(
         title: const Text('Resultado del Analisis'),
@@ -247,3 +212,130 @@ class ThankYouScreen extends StatelessWidget {
   }
 }
 */
+
+  @override
+  Widget build(BuildContext context) {
+    final result = _getResultConfig(combinedProbability);
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              // --- Custom Header ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.black54),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  Image.asset('assets/logo.png', height: 40),
+                ],
+              ),
+
+              const Spacer(flex: 2),
+
+              // --- Main Result Section (Unchanged) ---
+              Icon(result["icon"], size: 100, color: result["iconColor"]),
+              const SizedBox(height: 24),
+              
+              Text(
+                result["title"],
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  //color: Color.fromARGB(255, 196, 46, 114),
+                  color: Color.fromARGB(255, 24, 165, 193),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                result["subtitle"],
+                style: const TextStyle(
+                  fontSize: 16, 
+                  color: Colors.black54, 
+                  height: 1.5),
+                  textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              
+              // --- UPDATED: Detailed Analysis Card ---
+              _buildProbabilityDetails(),
+
+              const Spacer(flex: 3),
+
+              // --- UPDATED: "Finalize" Button ---
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6A1B9A),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('VOLVER AL INICIO', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- NEW: Helper widget for the detailed analysis card ---
+  Widget _buildProbabilityDetails() {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200, width: 2),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            "Análisis Detallado",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildDetailItem("Dibujo", drawingProbability),
+              _buildDetailItem("Audio", audioProbability),
+              _buildDetailItem("General", combinedProbability, isBold: true),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- NEW: Helper widget for each item in the analysis card ---
+  Widget _buildDetailItem(String label, double probability, {bool isBold = false}) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: Colors.black54),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          "${(probability * 100).toStringAsFixed(1)}%",
+          style: TextStyle(
+            fontSize: isBold ? 20 : 18,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            color: const Color(0xFF4A148C),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
