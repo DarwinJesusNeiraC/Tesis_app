@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:audioplayers/audioplayers.dart'; //audioplayers package
+import 'package:audioplayers/audioplayers.dart';
 import 'package:drawtesis/helpers/symptom_helper.dart';
 import 'package:drawtesis/models/user_data.dart';
-//import 'package:drawtesis/screens/thank_you_screen.dart';
 import 'package:drawtesis/services/prediction_service.dart';
 import 'package:drawtesis/services/symptom_detection_service.dart';
 import 'package:drawtesis/storage/user_storage.dart';
@@ -25,6 +24,8 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   final FlutterSoundPlayer _audioPlayer = FlutterSoundPlayer();
   final AudioPlayer _examplePlayer = AudioPlayer(); // Player for example sounds
   late final SymptomHelper _symptomHelper;
+  bool _isExamplePlaying = false;
+  bool get _canInteract => !_isRecording && !_audioPlayer.isPlaying;
 
   // --- State Management ---
   bool _isRecording = false;
@@ -83,22 +84,35 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   Future<void> _playExampleSound() async {
     try {
       // Assumes audio files are in 'assets/audio/' and named like 'A.wav', 'E.wav', etc.
-      String assetPath = 'audio/${_currentLetter}.wav';
+      /*String assetPath = 'audio/${_currentLetter}.wav';
       await _examplePlayer.play(AssetSource(assetPath));
+      */
+      if (_isExamplePlaying) {
+        await _examplePlayer.stop();
+        setState(() {
+          _isExamplePlaying = false;
+        });
+      } else {
+        String assetPath = 'audio/${_currentLetter}.wav';
+        await _examplePlayer.play(AssetSource(assetPath));
+        setState(() {
+          _isExamplePlaying = true;
+        });
+
+        _examplePlayer.onPlayerComplete.listen((event) {
+          setState(() {
+            _isExamplePlaying = false;
+          });
+        });
+      }
     } catch (e) {
       print("Error playing example sound: $e");
-      /*
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not play example audio: $e')),
-      );
-      */
     }
   }
 
   // --- Core Audio Logic ---
   Future<void> _startRecording() async {
     try {
-      // Defines the file path for the new recording.
       String fileName =
           'audio_${widget.user.firstName}_${widget.user.lastName}_${_currentLetter}_$_recordingCount.wav';
       String folderPath = await UserStorage.getUserFolder(widget.user);
@@ -106,7 +120,6 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
 
       setState(() {
         _filePath = path;
-        // Reset completion status for the new recording.
         _isRecordingComplete = false;
       });
 
@@ -147,15 +160,11 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
       if (_filePath != null && !_recordedAudioPaths.contains(_filePath)) {
         _recordedAudioPaths.add(_filePath!);
       }
-      
+
       setState(() {
         _isRecording = false;
         _isRecordingComplete = true; // Mark recording as complete.
       });
-/*
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Audio saved successfully: $_filePath')),
-      );*/
     } catch (e) {
       print('Error stopping recording: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -251,7 +260,8 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.black54),
+                    icon:
+                        const Icon(Icons.arrow_back_ios, color: Colors.black54),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   Image.asset('assets/logo.png', height: 40),
@@ -260,7 +270,10 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
               const SizedBox(height: 20),
               const Text(
                 'PRUEBA DE AUDIO',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF4A148C)),
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4A148C)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -277,7 +290,8 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200, width: 2),
+                          border:
+                              Border.all(color: Colors.grey.shade200, width: 2),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -297,14 +311,28 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
                             const SizedBox(height: 16),
                             Text(
                               'Repetición: $_recordingCount de 3',
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.blueGrey),
+                              style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blueGrey),
                             ),
                             const SizedBox(height: 24),
                             Icon(
                               Icons.mic,
                               size: 80,
-                              color: _isRecording ? Colors.redAccent : Colors.black,
+                              color: _isRecording
+                                  ? Colors.redAccent
+                                  : Colors.black,
                             ),
+                            if (_isRecording)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 16.0),
+                                child: Text(
+                                  "Grabando... ${_formatDuration(_recordingDuration)}",
+                                  style: const TextStyle(
+                                      fontSize: 18, color: Colors.red),
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -313,9 +341,20 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
                     Column(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildSideButton(icon: Icons.lightbulb_outline, label: 'EJEMPLO', onPressed: _playExampleSound),
-                        _buildSideButton(icon: Icons.mic, label: _isRecordingComplete ? 'REGRABAR' : 'GRABAR', onPressed: !_isRecording ? _startRecording : null),
-                        _buildSideButton(icon: Icons.play_arrow, label: 'REPRODUCIR', onPressed: canProceed ? _playAudio : null),
+                        _buildSideButton(
+                            icon: _isExamplePlaying
+                                ? Icons.pause
+                                : Icons.lightbulb_outline,
+                            label: _isExamplePlaying ? 'PAUSAR' : 'EJEMPLO',
+                            onPressed: _canInteract ? _playExampleSound : null),
+                        _buildSideButton(
+                            icon: Icons.mic,
+                            label: _isRecordingComplete ? 'REGRABAR' : 'GRABAR',
+                            onPressed: !_isRecording ? _startRecording : null),
+                        _buildSideButton(
+                            icon: Icons.play_arrow,
+                            label: 'REPRODUCIR',
+                            onPressed: canProceed ? _playAudio : null),
                       ],
                     ),
                   ],
@@ -330,9 +369,14 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
                     backgroundColor: const Color(0xFF6A1B9A),
                     disabledBackgroundColor: Colors.grey.shade300,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('SIGUIENTE', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text('SIGUIENTE',
+                      style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -342,7 +386,10 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
     );
   }
 
-  Widget _buildSideButton({required IconData icon, required String label, VoidCallback? onPressed}) {
+  Widget _buildSideButton(
+      {required IconData icon,
+      required String label,
+      VoidCallback? onPressed}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -352,7 +399,8 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
             backgroundColor: Colors.white,
             foregroundColor: Colors.black54,
             disabledForegroundColor: Colors.grey.shade300,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.all(20),
             elevation: 2,
             shadowColor: Colors.grey.withOpacity(0.2),
@@ -360,168 +408,12 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
           child: Icon(icon, size: 30),
         ),
         const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 12,
+                color: Colors.black54,
+                fontWeight: FontWeight.bold)),
       ],
     );
   }
 }
-
-
-
-/*
-  @override
-  Widget build(BuildContext context) {
-    // Determines if the main action buttons should be enabled.
-    final bool canInteract = !_isRecording;
-    final bool canProceed = _isRecordingComplete && canInteract;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Prueba de Audio"),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const Text(
-              "PRUEBA DE AUDIO (AUDIO TEST)",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            // Main content area
-            Expanded(
-              child: Row(
-                children: [
-                  // Central display box
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "${_currentLetter * 7}...",
-                            style: const TextStyle(
-                              fontSize: 40,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Repetición: $_recordingCount de 3',
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blueGrey,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Icon(
-                            Icons.mic,
-                            size: 80,
-                            // Animate color when recording
-                            color:
-                                _isRecording ? Colors.redAccent : Colors.black,
-                          ),
-                          if (_isRecording)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 16.0),
-                              child: Text(
-                                "Grabando... ${_formatDuration(_recordingDuration)}",
-                                style: const TextStyle(
-                                    fontSize: 18, color: Colors.red),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Side action buttons
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildSideButton(
-                        icon: Icons.lightbulb_outline,
-                        label: 'EJEMPLO',
-                        // UPDATED: Now calls the function to play example audio
-                        onPressed: _playExampleSound,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildSideButton(
-                        icon: Icons.mic,
-                        label: _isRecordingComplete ? 'REGRABAR' : 'GRABAR',
-                        onPressed: canInteract ? _startRecording : null,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildSideButton(
-                        icon: Icons.play_arrow,
-                        label: 'REPRODUCIR',
-                        onPressed: canProceed ? _playAudio : null,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Bottom "Next" button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: canProceed ? _nextStep : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6A1B9A), // Purple color
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  "SIGUIENTE",
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// A helper widget to create the styled side buttons.
-  Widget _buildSideButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback? onPressed,
-  }) {
-    return Column(
-      children: [
-        ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: Colors.grey.shade400),
-            ),
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-            padding: const EdgeInsets.all(16),
-            elevation: 0,
-          ),
-          child: Icon(icon, size: 30),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12)),
-      ],
-    );
-  }
-}
-*/
