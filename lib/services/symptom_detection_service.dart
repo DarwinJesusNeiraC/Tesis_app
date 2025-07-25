@@ -51,8 +51,13 @@ class SymptomDetectionService {
     }
 
     // Combine results (you can adjust this logic as needed)
+    double img_accuracy = 97.6 / 100;
+    double audio_accuracy = 90.33 / 100;
+    double peso_img = img_accuracy /(img_accuracy + audio_accuracy);
+    double peso_audio = audio_accuracy /(img_accuracy + audio_accuracy);
     final double combinedProbability =
-        (parkinsonProbabilityDrawing + parkinsonProbabilityAudio) / 2.0;
+        //(parkinsonProbabilityDrawing + parkinsonProbabilityAudio) / 2.0;
+        (parkinsonProbabilityDrawing * peso_img) + (parkinsonProbabilityAudio * peso_audio);
     print(
         'Parkinson Probability - Drawing: ${parkinsonProbabilityDrawing * 100}%');
     print('Parkinson Probability - Audio: ${parkinsonProbabilityAudio * 100}%');

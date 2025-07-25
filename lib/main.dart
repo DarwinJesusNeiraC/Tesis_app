@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       title: 'App de Dibujo',
 
       debugShowCheckedModeBanner: false, // Elimina el banner "Debug"
-
+  
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/',
       routes: {
