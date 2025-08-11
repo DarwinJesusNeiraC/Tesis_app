@@ -19,7 +19,10 @@ class _DrawScreenState extends State<DrawScreen> {
   final List<Offset?> _points = [];
   final GlobalKey _globalKey = GlobalKey();
 
-  Future<void> _saveDrawingAndNavigate() async {
+  // 1. Añadimos un contador para saber en qué espiral estamos.
+  int _currentSpiral = 1;
+
+  /*Future<void> _saveDrawingAndNavigate() async {
     try {
       final folderPath = await UserStorage.getUserFolder(widget.user);
       final RenderRepaintBoundary? boundary = _globalKey.currentContext
@@ -35,6 +38,61 @@ class _DrawScreenState extends State<DrawScreen> {
       print('Imagen guardada en: ${file.path}');
 
       if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AudioRecordingScreen(user: widget.user),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error saving drawing: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al guardar el dibujo: $e')),
+        );
+      }
+    }
+  }
+  */
+
+  Future<void> _saveAndProceed() async {
+    try {
+      // Captura la imagen del RepaintBoundary
+      final RenderRepaintBoundary? boundary = _globalKey.currentContext
+          ?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) throw Exception('Could not access drawing canvas');
+
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      // Obtenemos la ruta para el dibujo actual usando el número de espiral.
+      // Tu solicitud de "procesar solo la primera" puede interpretarse de varias formas.
+      // Este código guarda las 3 imágenes, lo cual es más seguro para una tesis.
+      // Si REALMENTE solo quieres el archivo de la primera, puedes envolver las
+      // siguientes 3 líneas en un: if (_currentSpiral == 1) { ... }
+      final folderPath = await UserStorage.getUserFolder(widget.user);
+
+      if (folderPath != null) {
+        final filePath = '$folderPath/espiral_$_currentSpiral.png';
+        final file = File(filePath);
+        await file.writeAsBytes(pngBytes);
+        print('Imagen $_currentSpiral guardada en: ${file.path}');
+      }
+
+      if (!mounted) return;
+
+      // 3. Comprobamos si hemos terminado las 3 espirales.
+      if (_currentSpiral < 3) {
+        // Si no, avanzamos a la siguiente y limpiamos el lienzo.
+        setState(() {
+          _currentSpiral++;
+          _points.clear();
+        });
+      } else {
+        // Si ya era la tercera, navegamos a la siguiente pantalla.
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -83,9 +141,9 @@ class _DrawScreenState extends State<DrawScreen> {
               ),
               const SizedBox(height: 20),
               // --- Titles ---
-              const Text(
-                'PRUEBA DE LA ESPIRAL',
-                style: TextStyle(
+              Text(
+                'PRUEBA DE LA ESPIRAL ($_currentSpiral de 3)',
+                style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF4A148C)),
@@ -156,7 +214,7 @@ class _DrawScreenState extends State<DrawScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _hasDrawing ? _saveDrawingAndNavigate : null,
+                  onPressed: _hasDrawing ? _saveAndProceed : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
                         _hasDrawing ? const Color(0xFF6A1B9A) : Colors.grey,

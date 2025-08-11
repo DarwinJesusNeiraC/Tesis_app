@@ -1,3 +1,4 @@
+import 'package:drawtesis/storage/user_storage.dart';
 import 'package:drawtesis/utils/input_validators.dart';
 import 'package:flutter/material.dart';
 import 'draw_screen.dart';
@@ -19,7 +20,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
   String _handUsed = 'Derecha';
   bool _isDominantHand = false;
 
-  void _navigateToDrawScreen() {
+  void _navigateToDrawScreen() async {
     if (_formKey.currentState!.validate()) {
       //_formKey.currentState!.save();
       final user = UserData(
@@ -31,6 +32,11 @@ class _UserFormScreenState extends State<UserFormScreen> {
         isDominantHand: _isDominantHand,
       );
 
+      await UserStorage.saveUserData(user);
+
+      // (Buena práctica) Comprueba que el widget sigue montado antes de navegar
+      if (!mounted) return;
+
       // Navega a la pantalla de dibujo, pasando los datos como argumentos
       Navigator.push(
         context,
@@ -40,7 +46,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
       );
     }
   }
-  
+
   @override
   void dispose() {
     _firstNameController.dispose();
@@ -58,12 +64,14 @@ class _UserFormScreenState extends State<UserFormScreen> {
           children: [
             // --- Custom Header ---
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.black54),
+                    icon:
+                        const Icon(Icons.arrow_back_ios, color: Colors.black54),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   Image.asset('assets/logo.png', height: 40),
@@ -97,21 +105,26 @@ class _UserFormScreenState extends State<UserFormScreen> {
                         _buildTextFormField(
                           controller: _firstNameController,
                           label: 'Nombres*',
-                          validator: (value) => InputValidators.validateNameOrSurname(value, fieldName: 'nombre'),
+                          validator: (value) =>
+                              InputValidators.validateNameOrSurname(value,
+                                  fieldName: 'nombre'),
                         ),
                         const SizedBox(height: 20),
                         _buildTextFormField(
                           controller: _lastNameController,
                           label: 'Apellidos*',
-                           validator: (value) => InputValidators.validateNameOrSurname(value, fieldName: 'apellido'),
+                          validator: (value) =>
+                              InputValidators.validateNameOrSurname(value,
+                                  fieldName: 'apellido'),
                         ),
                         const SizedBox(height: 20),
-                         _buildTextFormField(
+                        _buildTextFormField(
                           controller: _ageController,
                           label: 'Edad*',
                           keyboardType: TextInputType.number,
-                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Ingresa tu edad';
+                          validator: (value) {
+                            if (value == null || value.isEmpty)
+                              return 'Ingresa tu edad';
                             final age = int.tryParse(value);
                             if (age == null || age < 5 || age > 120) {
                               return 'Edad no válida (5–120)';
@@ -129,7 +142,8 @@ class _UserFormScreenState extends State<UserFormScreen> {
                             if (value != null) {
                               setState(() => _gender = value);
                             }
-                          },                        ),
+                          },
+                        ),
                         const SizedBox(height: 20),
                         _buildDropdownFormField(
                           label: 'Mano dominante*',
@@ -137,15 +151,17 @@ class _UserFormScreenState extends State<UserFormScreen> {
                           items: ['Derecha', 'Izquierda'],
                           // --- FIX: Check if value is not null before assigning ---
                           onChanged: (value) {
-                             if (value != null) {
+                            if (value != null) {
                               setState(() => _handUsed = value);
                             }
-                          },                        ),
+                          },
+                        ),
                         const SizedBox(height: 24),
                         _buildSwitchTile(
                           title: '¿Usarás tu mano dominante para la prueba?',
                           value: _isDominantHand,
-                          onChanged: (value) => setState(() => _isDominantHand = value),
+                          onChanged: (value) =>
+                              setState(() => _isDominantHand = value),
                         ),
                         const SizedBox(height: 40),
                         SizedBox(
@@ -159,7 +175,11 @@ class _UserFormScreenState extends State<UserFormScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text('GUARDAR Y CONTINUAR', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                            child: const Text('GUARDAR Y CONTINUAR',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],
@@ -174,7 +194,11 @@ class _UserFormScreenState extends State<UserFormScreen> {
     );
   }
 
-  Widget _buildTextFormField({required TextEditingController controller, required String label, TextInputType keyboardType = TextInputType.text, required FormFieldValidator<String> validator}) {
+  Widget _buildTextFormField(
+      {required TextEditingController controller,
+      required String label,
+      TextInputType keyboardType = TextInputType.text,
+      required FormFieldValidator<String> validator}) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -182,36 +206,49 @@ class _UserFormScreenState extends State<UserFormScreen> {
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
 
-  Widget _buildDropdownFormField({required String label, String? value, required List<String> items, required ValueChanged<String?> onChanged}) {
+  Widget _buildDropdownFormField(
+      {required String label,
+      String? value,
+      required List<String> items,
+      required ValueChanged<String?> onChanged}) {
     return DropdownButtonFormField<String>(
       value: value,
-      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+      items: items
+          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+          .toList(),
       onChanged: onChanged,
-      validator: (value) => value == null ? 'Por favor selecciona una opción' : null,
+      validator: (value) =>
+          value == null ? 'Por favor selecciona una opción' : null,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
 
-  Widget _buildSwitchTile({required String title, required bool value, required ValueChanged<bool> onChanged}) {
+  Widget _buildSwitchTile(
+      {required String title,
+      required bool value,
+      required ValueChanged<bool> onChanged}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300)
-      ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Flexible(child: Text(title, style: TextStyle(fontSize: 16, color: Colors.black54))),
+          Flexible(
+              child: Text(title,
+                  style: TextStyle(fontSize: 16, color: Colors.black54))),
           Switch(
             value: value,
             onChanged: onChanged,
@@ -221,91 +258,4 @@ class _UserFormScreenState extends State<UserFormScreen> {
       ),
     );
   }
-} 
-
-/*
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(title: Text('Registro de Usuario')),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextFormField(
-                        controller: _firstNameController,
-                        decoration: InputDecoration(labelText: 'Nombre'),
-                        validator: (value) =>
-                            InputValidators.validateNameOrSurname(value,
-                                fieldName: 'nombre'),
-                      ),
-                      TextFormField(
-                        controller: _lastNameController,
-                        decoration: InputDecoration(labelText: 'Apellido'),
-                        validator: (value) =>
-                            InputValidators.validateNameOrSurname(value,
-                                fieldName: 'apellido'),
-                      ),
-                      TextFormField(
-                        controller: _ageController,
-                        decoration: InputDecoration(labelText: 'Edad'),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty)
-                            return 'Ingresa tu edad';
-                          final age = int.tryParse(value);
-                          if (age == null || age < 5 || age > 120) {
-                            return 'Edad no válida (5–120)';
-                          }
-                          return null;
-                        },
-                      ),
-                      DropdownButtonFormField<String>(
-                        value: _gender,
-                        items: ['Hombre', 'Mujer'].map((String gender) {
-                          return DropdownMenuItem(
-                              value: gender, child: Text(gender));
-                        }).toList(),
-                        onChanged: (value) => setState(() => _gender = value!),
-                      ),
-                      DropdownButtonFormField<String>(
-                        value: _handUsed,
-                        items: ['Derecha', 'Izquierda'].map((String hand) {
-                          return DropdownMenuItem(
-                              value: hand, child: Text(hand));
-                        }).toList(),
-                        onChanged: (value) =>
-                            setState(() => _handUsed = value!),
-                      ),
-                      SwitchListTile(
-                        title: Text('¿Es la mano dominante?'),
-                        value: _isDominantHand,
-                        onChanged: (value) =>
-                            setState(() => _isDominantHand = value),
-                      ),
-                      SizedBox(height: 20),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: _navigateToDrawScreen,
-                          child: Text('Guardar y Dibujar'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}*/
+}

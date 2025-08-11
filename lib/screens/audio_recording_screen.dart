@@ -113,9 +113,20 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   // --- Core Audio Logic ---
   Future<void> _startRecording() async {
     try {
+      final folderPath = await UserStorage.getUserFolder(widget.user);
+      if (folderPath == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'No se pudo acceder a la carpeta. Verifique los permisos.')),
+          );
+        }
+        return; // Detiene la ejecución si no se obtiene la carpeta
+      }
+
       String fileName =
           'audio_${widget.user.firstName}_${widget.user.lastName}_${_currentLetter}_$_recordingCount.wav';
-      String folderPath = await UserStorage.getUserFolder(widget.user);
       String path = '$folderPath/$fileName';
 
       setState(() {
@@ -203,7 +214,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   void _nextStep() {
     setState(() {
       // We have 3 repetitions per letter.
-      if (_recordingCount < 1) {
+      if (_recordingCount < 3) {
         _recordingCount++;
       } else {
         // Move to the next letter if available.
@@ -226,8 +237,17 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
   /// Navigates to the results screen after processing the data.
   Future<void> _navigateToThankYouScreen() async {
     // Show a loading indicator while processing.
-    final String folderPath = await UserStorage.getUserFolder(widget.user);
-    final String drawingImagePath = '$folderPath/dibujo.png';
+    final folderPath = await UserStorage.getUserFolder(widget.user);
+    if (folderPath == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('No se pudo acceder a la carpeta para análisis.')),
+        );
+      }
+      return;
+    }
+    final String drawingImagePath = '$folderPath/espiral_1.png';
     final List<String> allAudioPaths = _recordedAudioPaths;
     await _symptomHelper.analyzeAndNavigate(
       context: context,
