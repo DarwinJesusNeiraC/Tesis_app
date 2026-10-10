@@ -51,7 +51,7 @@ class SymptomDetectionService {
     }
 
     // Combine results (you can adjust this logic as needed)
-    double img_accuracy = 97.6 / 100;
+    double img_accuracy = 96.64 / 100;
     double audio_accuracy = 90.33 / 100;
     double peso_img = img_accuracy /(img_accuracy + audio_accuracy);
     double peso_audio = audio_accuracy /(img_accuracy + audio_accuracy);
